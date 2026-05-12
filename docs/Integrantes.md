@@ -1,27 +1,27 @@
-# Integrantes do Grupo
+# Projeto de Sistemas
 
-Filipe Augusto Moreira Rocha
-Larissa Aparecida dos Reis
-Murilo da Silva Alves
-Saulo Oliveira Moreira
-Thiago Eduardo Alves 
+## Integrantes do Grupo
+
+- Filipe Augusto Moreira Rocha  
+- Larissa Aparecida dos Reis  
+- Murilo da Silva Alves  
+- Saulo Oliveira Moreira  
+- Thiago Eduardo Alves  
 
 ---
 
 ## Professor Orientador
 
-Prof. Dr. Douglas José Mendonça 
+**Prof. Dr. Douglas José Mendonça**
+
 ---
 
 ## Instituição
 
-Anhanguera 
+**Anhanguera**
 
-**Curso:**  
-
+### Curso
 Sistema de Informação
 
-**Disciplina:**  
-
-Projeto de Sistemas 
-
+### Disciplina
+Projeto de Sistemas
