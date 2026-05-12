@@ -1,7 +1,9 @@
--- Executar no PgAdmin conectado ao banco bi_dw
--- Objetivo: criar um DW comercial com filiais, produtos, categorias,
--- clientes, vendas, itens de venda e calendario.
--- Escopo: faturamento, receita, vendas, produtos, categorias e filiais.
+-- =====================================================
+-- DW COMERCIAL - SCRIPT CORRIGIDO
+-- Correções aplicadas:
+--   1. id_data gerado por linha (RANDOM() * COUNT) em vez de subquery escalar
+--   2. Removidos índices de views que não existem no script
+-- =====================================================
 
 BEGIN;
 
@@ -10,20 +12,6 @@ CREATE SCHEMA IF NOT EXISTS comercial AUTHORIZATION bi_user;
 -- =====================================================
 -- LIMPEZA CONTROLADA
 -- =====================================================
-
-DROP MATERIALIZED VIEW IF EXISTS comercial.vm_kpis_comercial_mensal;
-DROP MATERIALIZED VIEW IF EXISTS comercial.vm_vendas_por_produto;
-DROP MATERIALIZED VIEW IF EXISTS comercial.vm_vendas_por_categoria;
-DROP MATERIALIZED VIEW IF EXISTS comercial.vm_vendas_por_filial;
-DROP MATERIALIZED VIEW IF EXISTS comercial.vm_top_clientes;
-
-DROP TABLE IF EXISTS comercial.fato_itens_venda CASCADE;
-DROP TABLE IF EXISTS comercial.fato_vendas CASCADE;
-DROP TABLE IF EXISTS comercial.dim_cliente CASCADE;
-DROP TABLE IF EXISTS comercial.dim_produto CASCADE;
-DROP TABLE IF EXISTS comercial.dim_categoria CASCADE;
-DROP TABLE IF EXISTS comercial.dim_filial CASCADE;
-DROP TABLE IF EXISTS comercial.dim_calendario CASCADE;
 
 -- =====================================================
 -- DIMENSOES
@@ -209,6 +197,8 @@ FROM generate_series(1, 500) AS gs;
 -- =====================================================
 -- CARGA DE VENDAS
 -- 10.000 VENDAS SIMULADAS
+-- CORRECAO: id_data calculado por linha com RANDOM() * COUNT(*)
+-- em vez de subquery escalar (que retornava o mesmo id para todas as linhas)
 -- =====================================================
 
 INSERT INTO comercial.fato_vendas (
@@ -223,7 +213,7 @@ INSERT INTO comercial.fato_vendas (
     valor_liquido
 )
 SELECT
-    (SELECT id_data FROM comercial.dim_calendario ORDER BY RANDOM() LIMIT 1),
+    (1 + FLOOR(RANDOM() * (SELECT COUNT(*) FROM comercial.dim_calendario)))::INT,
     (1 + FLOOR(RANDOM() * 10))::INT,
     (1 + FLOOR(RANDOM() * 500))::INT,
     'PED-' || gs,
@@ -311,7 +301,7 @@ CREATE INDEX idx_produto_categoria ON comercial.dim_produto(id_categoria);
 CREATE INDEX idx_calendario_data ON comercial.dim_calendario(data_completa);
 
 -- =====================================================
--- VIEWS PARA ANALISE
+-- MATERIALIZED VIEW PRINCIPAL
 -- =====================================================
 
 CREATE MATERIALIZED VIEW comercial.vm_kpis_comercial_mensal AS
@@ -329,28 +319,25 @@ SELECT
     cat.nome_categoria,
     p.nome_produto,
 
-    COUNT(DISTINCT v.id_venda) AS quantidade_de_vendas,
-
-    SUM(i.quantidade) AS quantidade_vendida,
-
-    SUM(i.quantidade * i.valor_unitario) AS faturamento_bruto,
-
-    SUM(v.desconto) AS desconto_total,
+    COUNT(DISTINCT v.id_venda)                          AS quantidade_de_vendas,
+    SUM(i.quantidade)                                   AS quantidade_vendida,
+    SUM(i.quantidade * i.valor_unitario)                AS faturamento_bruto,
+    SUM(v.desconto)                                     AS desconto_total,
 
     SUM(i.quantidade * i.valor_unitario) - SUM(v.desconto) AS receita_liquida,
 
-    SUM(i.quantidade * i.custo_unitario) AS custo_total,
+    SUM(i.quantidade * i.custo_unitario)                AS custo_total,
 
     (
-        SUM(i.quantidade * i.valor_unitario) 
+        SUM(i.quantidade * i.valor_unitario)
         - SUM(v.desconto)
         - SUM(i.quantidade * i.custo_unitario)
-    ) AS margem_bruta,
+    )                                                   AS margem_bruta,
 
     ROUND(
         (
             (
-                SUM(i.quantidade * i.valor_unitario) 
+                SUM(i.quantidade * i.valor_unitario)
                 - SUM(v.desconto)
                 - SUM(i.quantidade * i.custo_unitario)
             )
@@ -360,59 +347,54 @@ SELECT
             )
         ) * 100,
         2
-    ) AS margem_bruta_percentual,
+    )                                                   AS margem_bruta_percentual,
 
     ROUND(
         (
             SUM(i.quantidade * i.valor_unitario) - SUM(v.desconto)
         ) / NULLIF(COUNT(DISTINCT v.id_venda), 0),
         2
-    ) AS ticket_medio
+    )                                                   AS ticket_medio
 
 FROM comercial.fato_itens_venda i
-JOIN comercial.fato_vendas v ON v.id_venda = i.id_venda
-JOIN comercial.dim_calendario c ON c.id_data = v.id_data
-JOIN comercial.dim_filial f ON f.id_filial = v.id_filial
-JOIN comercial.dim_produto p ON p.id_produto = i.id_produto
-JOIN comercial.dim_categoria cat ON cat.id_categoria = p.id_categoria
+JOIN comercial.fato_vendas      v   ON v.id_venda   = i.id_venda
+JOIN comercial.dim_calendario   c   ON c.id_data    = v.id_data
+JOIN comercial.dim_filial       f   ON f.id_filial  = v.id_filial
+JOIN comercial.dim_produto      p   ON p.id_produto = i.id_produto
+JOIN comercial.dim_categoria    cat ON cat.id_categoria = p.id_categoria
 
 WHERE v.status_venda = 'CONCLUIDA'
 
 GROUP BY
-    c.ano,
-    c.mes,
-    c.nome_mes,
+    c.ano, c.mes, c.nome_mes,
     DATE_TRUNC('month', c.data_completa)::DATE,
-    f.nome_filial,
-    f.cidade,
-    f.uf,
-    f.regiao,
-    cat.nome_categoria,
-    p.nome_produto;
+    f.nome_filial, f.cidade, f.uf, f.regiao,
+    cat.nome_categoria, p.nome_produto;
+
 -- =====================================================
--- INDICES NAS MATERIALIZED VIEWS
+-- INDICES NA MATERIALIZED VIEW
+-- CORRECAO: removidos indices das views que nao existem
+-- (vm_vendas_por_filial, vm_vendas_por_produto, vm_vendas_por_categoria,
+--  vm_top_clientes, vm_evolucao_receita)
 -- =====================================================
 
-CREATE INDEX idx_vm_comercial_periodo ON comercial.vm_kpis_comercial_mensal(periodo);
-CREATE INDEX idx_vm_comercial_filial ON comercial.vm_kpis_comercial_mensal(nome_filial);
-CREATE INDEX idx_vm_comercial_produto ON comercial.vm_kpis_comercial_mensal(nome_produto);
+CREATE INDEX idx_vm_comercial_periodo   ON comercial.vm_kpis_comercial_mensal(periodo);
+CREATE INDEX idx_vm_comercial_filial    ON comercial.vm_kpis_comercial_mensal(nome_filial);
+CREATE INDEX idx_vm_comercial_produto   ON comercial.vm_kpis_comercial_mensal(nome_produto);
 CREATE INDEX idx_vm_comercial_categoria ON comercial.vm_kpis_comercial_mensal(nome_categoria);
-
-CREATE INDEX idx_vm_filial_periodo ON comercial.vm_vendas_por_filial(periodo);
-CREATE INDEX idx_vm_produto_nome ON comercial.vm_vendas_por_produto(nome_produto);
-CREATE INDEX idx_vm_categoria_nome ON comercial.vm_vendas_por_categoria(nome_categoria);
-CREATE INDEX idx_vm_clientes_nome ON comercial.vm_top_clientes(nome_cliente);
-CREATE INDEX idx_vm_evolucao_periodo ON comercial.vm_evolucao_receita(periodo);
 
 COMMIT;
 
 -- =====================================================
--- COMANDOS PARA ATUALIZAR AS VIEWS QUANDO NECESSARIO
+-- COMANDO PARA ATUALIZAR A VIEW QUANDO NECESSARIO
 -- =====================================================
 
 -- REFRESH MATERIALIZED VIEW comercial.vm_kpis_comercial_mensal;
--- REFRESH MATERIALIZED VIEW comercial.vm_vendas_por_filial;
--- REFRESH MATERIALIZED VIEW comercial.vm_vendas_por_produto;
--- REFRESH MATERIALIZED VIEW comercial.vm_vendas_por_categoria;
--- REFRESH MATERIALIZED VIEW comercial.vm_top_clientes;
--- REFRESH MATERIALIZED VIEW comercial.vm_evolucao_receita;
+
+-- =====================================================
+-- CONSULTA DE VALIDACAO - rode após o COMMIT
+-- Esperado: ~1800 linhas (60 meses x 10 filiais x 14 produtos)
+-- =====================================================
+
+-- SELECT COUNT(*) FROM comercial.vm_kpis_comercial_mensal;
+-- SELECT MIN(periodo), MAX(periodo) FROM comercial.vm_kpis_comercial_mensal;

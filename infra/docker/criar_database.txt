@@ -1,0 +1,5 @@
+Criação do Ambiente 
+
+# Porta local 5781 -> porta do container 5432 
+
+docker run -d --name db_comercial -p 5781:5432 -e POSTGRES_DB=bi_comercial -e POSTGRES_USER=bi_user -e POSTGRES_PASSWORD=bi_pass postgres:16.1
