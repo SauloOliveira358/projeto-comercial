@@ -1,5 +1,75 @@
-Criação do Ambiente 
 
-# Porta local 5781 -> porta do container 5432 
+1. Criar o container PostgreSQL
+
+Executar o comando abaixo no terminal:
 
 docker run -d --name db_comercial -p 5781:5432 -e POSTGRES_DB=bi_comercial -e POSTGRES_USER=bi_user -e POSTGRES_PASSWORD=bi_pass postgres:16.1
+
+Configurações utilizadas:
+
+* Container: db_comercial
+* Porta local: 5781
+* Porta interna PostgreSQL: 5432
+* Banco: bi_comercial
+* Usuário: bi_user
+* Senha: bi_pass
+
+2. Verificar se o container está rodando
+
+Executar:
+
+docker ps
+
+O container db_comercial deve aparecer na lista.
+
+3. Configurar conexão no pgAdmin
+
+Abrir o pgAdmin.
+
+Criar novo servidor:
+Servers > Register > Server
+
+Aba General:
+Name: Postgres Comercial
+
+Aba Connection:
+Host name/address: localhost
+Port: 5781
+Maintenance database: bi_comercial
+Username: bi_user
+Password: bi_pass
+
+Salvar conexão.
+
+4. Confirmar conexão
+
+Após salvar, verificar se o banco aparece em:
+
+Servers
+Postgres Comercial
+Databases
+bi_comercial
+
+
+
+5. Testar conexão no Flask
+
+python run.py
+
+6. Executar aplicação
+
+python run.py
+
+Abrir navegador:
+http://127.0.0.1:5000
+
+Resultado esperado:
+Banco conectado com sucesso!
+
+DADOS FINAIS DE CONEXÃO
+
+Host: localhost
+Porta: 5781
+Banco: bi_comercial
+Usuário: bi_user
+Senha: bi_pass
