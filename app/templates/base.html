@@ -1,12 +1,32 @@
 <!DOCTYPE html>
-<html lang='pt-br'>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>Page Title</title>
-    <link rel='stylesheet' href='main.css'>
-</head>
+<html>
 <body>
-    
+    <div class="filtro-data">
+
+    <div class="campo-data">
+        <label for="dataInicio">Data Inicial</label>
+        <input type="date" id="dataInicio">
+    </div>
+
+    <div class="campo-data">
+        <label for="dataFim">Data Final</label>
+        <input type="date" id="dataFim">
+    </div>
+
+</div>
+
+<h3>Filtros</h3>
+<select id="filialSelect">
+    <option value="">Todas as Filiais</option>
+</select>
+<button id="btnAplicar">Aplicar Filtro</button>
+
+<hr>
+
+<h3>Resultado</h3>
+<p>Faturamento: R$ <span id="valorFaturamento">0.00</span></p>
+
+<script src="/static/js/script.js"></script>
+
 </body>
 </html>

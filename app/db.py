@@ -1,11 +1,21 @@
-import psycopg2
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from flask import abort
 from app.config import DB_CONFIG
+from sqlalchemy import text # Importe o text
 
-def get_connection():
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        return conn
-    except Exception as e:
-        print("Erro ao conectar:", e)
-        raise
+DATABASE_URL = (
+f"postgresql+psycopg://"
+f"{DB_CONFIG['user']}:{DB_CONFIG['password']}"
+f"@{DB_CONFIG['host']}:{DB_CONFIG['port']}"
+f"/{DB_CONFIG['database']}"
+)
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_session():
+ return SessionLocal()
+
+
 
