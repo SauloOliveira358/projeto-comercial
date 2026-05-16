@@ -1,5 +1,5 @@
 from sqlalchemy import text
-
+    
 def get_filiais():
     """Retorna a query para listar as filiais únicas."""
     
@@ -12,21 +12,238 @@ def get_filiais():
     """
     return text(sql)
 
-def get_faturamento(filial=None, data_inicio=None, data_fim=None):
+def get_produtos(categoria=None):
+
+    sql = """
+        SELECT DISTINCT nome_produto
+        FROM comercial.vm_kpis_comercial_mensal
+        WHERE 1=1
+    """
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+
+    sql += " ORDER BY nome_produto"
+
+    return text(sql)
+
+def get_categorias():
+    """Retorna a Query da lista de Categorias"""
+
+    sql = """
+                SELECT nome_categoria
+                FROM comercial.vm_kpis_comercial_mensal
+                GROUP BY nome_categoria
+                Order BY nome_categoria
+                """
+    return text(sql)
+
+
+
+def get_faturamento(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
     """
     Monta a query de faturamento dinamicamente com base nos filtros.
     Se os filtros forem None, retorna o total geral.
     """
-    sql = "SELECT SUM(faturamento_bruto) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1"
+    sql = "SELECT SUM(faturamento_bruto) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
     params = {}
 
     if filial:
         sql += " AND nome_filial = :filial"
         params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
     
     if data_inicio and data_fim:
         sql += " AND periodo BETWEEN :inicio AND :fim"
         params['inicio'] = data_inicio
         params['fim'] = data_fim
+
+    return text(sql), params
+
+
+def get_receitaLiquida(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT SUM(receita_liquida) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    return text(sql), params
+
+
+def get_margem_bruta(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT SUM(margem_bruta) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    return text(sql), params
+
+
+
+def get_margem_bruta_percentual(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT AVG(margem_bruta_percentual) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    return text(sql), params
+
+
+
+###grafico Receita Bruta
+
+def get_grafico_receita_bruta(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT periodo,SUM(faturamento_bruto) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+    sql += " GROUP BY periodo ORDER BY periodo"
+    
+
+    return text(sql), params
+
+
+
+
+def get_grafico_receita_liquida(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT periodo,SUM(receita_liquida) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+    sql += " GROUP BY periodo ORDER BY periodo"
+    
+
+    return text(sql), params
+
+#Grafico Margem Média
+
+def get_grafico_margem_bruta_percentual(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query do grafico margem media percentual a dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT periodo,AVG(margem_bruta_percentual) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+    sql += " GROUP BY periodo ORDER BY periodo"
+    
 
     return text(sql), params
