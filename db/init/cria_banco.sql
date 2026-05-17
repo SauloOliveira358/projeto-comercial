@@ -1,21 +1,5 @@
--- =====================================================
--- DW COMERCIAL - SCRIPT CORRIGIDO
--- Correções aplicadas:
---   1. id_data gerado por linha (RANDOM() * COUNT) em vez de subquery escalar
---   2. Removidos índices de views que não existem no script
--- =====================================================
-
-BEGIN;
-
-CREATE SCHEMA IF NOT EXISTS comercial AUTHORIZATION bi_user;
-
--- =====================================================
--- LIMPEZA CONTROLADA
--- =====================================================
-
--- =====================================================
--- DIMENSOES
--- =====================================================
+DROP SCHEMA IF EXISTS comercial CASCADE;
+CREATE SCHEMA comercial AUTHORIZATION bi_user;
 
 CREATE TABLE comercial.dim_calendario (
     id_data SERIAL PRIMARY KEY,
@@ -45,12 +29,11 @@ CREATE TABLE comercial.dim_categoria (
 CREATE TABLE comercial.dim_produto (
     id_produto SERIAL PRIMARY KEY,
     id_categoria INT NOT NULL REFERENCES comercial.dim_categoria(id_categoria),
-    nome_produto VARCHAR(120) NOT NULL,
+    nome_produto VARCHAR(120) NOT NULL UNIQUE,
     marca VARCHAR(80),
     preco_venda NUMERIC(10,2) NOT NULL,
     custo_produto NUMERIC(10,2) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'ATIVO',
-    UNIQUE (nome_produto)
+    status VARCHAR(20) NOT NULL DEFAULT 'ATIVO'
 );
 
 CREATE TABLE comercial.dim_cliente (
@@ -61,10 +44,6 @@ CREATE TABLE comercial.dim_cliente (
     uf CHAR(2),
     data_cadastro DATE NOT NULL
 );
-
--- =====================================================
--- FATOS
--- =====================================================
 
 CREATE TABLE comercial.fato_vendas (
     id_venda BIGSERIAL PRIMARY KEY,
@@ -90,33 +69,20 @@ CREATE TABLE comercial.fato_itens_venda (
     custo_total NUMERIC(14,2) NOT NULL
 );
 
--- =====================================================
--- CARGA DA DIMENSAO CALENDARIO
--- 5 ANOS DE HISTORICO DIARIO
--- =====================================================
-
-INSERT INTO comercial.dim_calendario (
-    data_completa, ano, mes, nome_mes, trimestre, semestre
-)
+INSERT INTO comercial.dim_calendario
 SELECT
+    ROW_NUMBER() OVER () AS id_data,
     gs::date,
     EXTRACT(YEAR FROM gs)::INT,
     EXTRACT(MONTH FROM gs)::INT,
     TO_CHAR(gs, 'TMMonth'),
     EXTRACT(QUARTER FROM gs)::INT,
-    CASE 
-        WHEN EXTRACT(MONTH FROM gs) <= 6 THEN 1 
-        ELSE 2 
-    END
+    CASE WHEN EXTRACT(MONTH FROM gs) <= 6 THEN 1 ELSE 2 END
 FROM generate_series(
     CURRENT_DATE - INTERVAL '5 years',
     CURRENT_DATE,
     INTERVAL '1 day'
 ) AS gs;
-
--- =====================================================
--- CARGA DE FILIAIS
--- =====================================================
 
 INSERT INTO comercial.dim_filial (nome_filial, cidade, uf, regiao, porte) VALUES
 ('Filial Sao Paulo Centro', 'Sao Paulo', 'SP', 'Sudeste', 'Grande'),
@@ -130,10 +96,6 @@ INSERT INTO comercial.dim_filial (nome_filial, cidade, uf, regiao, porte) VALUES
 ('Filial Goiania', 'Goiania', 'GO', 'Centro-Oeste', 'Media'),
 ('Filial Brasilia', 'Brasilia', 'DF', 'Centro-Oeste', 'Grande');
 
--- =====================================================
--- CARGA DE CATEGORIAS
--- =====================================================
-
 INSERT INTO comercial.dim_categoria (nome_categoria, descricao) VALUES
 ('Perifericos', 'Mouse, teclado, headset e acessórios gamer'),
 ('Hardware', 'Peças internas para computadores'),
@@ -142,41 +104,36 @@ INSERT INTO comercial.dim_categoria (nome_categoria, descricao) VALUES
 ('Armazenamento', 'HDs, SSDs e dispositivos de armazenamento'),
 ('Redes', 'Roteadores, switches e placas de rede');
 
--- =====================================================
--- CARGA DE PRODUTOS
--- =====================================================
-
 INSERT INTO comercial.dim_produto (
     id_categoria, nome_produto, marca, preco_venda, custo_produto, status
 ) VALUES
 (1, 'Mouse Gamer RGB', 'RedTech', 129.90, 70.00, 'ATIVO'),
 (1, 'Teclado Mecanico', 'KeyPro', 249.90, 140.00, 'ATIVO'),
 (1, 'Headset Gamer 7.1', 'SoundMax', 299.90, 170.00, 'ATIVO'),
+(1, 'Mousepad Gamer XL', 'RedTech', 89.90, 35.00, 'ATIVO'),
 (2, 'Placa Mae B550', 'TechBoard', 699.90, 470.00, 'ATIVO'),
 (2, 'Processador Ryzen 5', 'AMD', 899.90, 650.00, 'ATIVO'),
 (2, 'Memoria RAM 16GB', 'FastMemory', 299.90, 180.00, 'ATIVO'),
+(2, 'Fonte 650W', 'PowerMax', 399.90, 250.00, 'ATIVO'),
 (3, 'Notebook i5 16GB', 'NotePro', 3599.90, 2800.00, 'ATIVO'),
 (3, 'PC Gamer Completo', 'ByteMachine', 4999.90, 3800.00, 'ATIVO'),
+(3, 'Mini PC Office', 'ByteMachine', 2499.90, 1800.00, 'ATIVO'),
 (4, 'Monitor 24 Polegadas', 'ViewMax', 799.90, 520.00, 'ATIVO'),
 (4, 'Monitor Gamer 144Hz', 'ViewMax', 1299.90, 850.00, 'ATIVO'),
+(4, 'Monitor Ultrawide 29', 'ViewMax', 1699.90, 1100.00, 'ATIVO'),
 (5, 'SSD 480GB', 'StorageX', 229.90, 130.00, 'ATIVO'),
 (5, 'HD Externo 1TB', 'StorageX', 349.90, 230.00, 'ATIVO'),
+(5, 'SSD NVMe 1TB', 'StorageX', 499.90, 310.00, 'ATIVO'),
 (6, 'Roteador Dual Band', 'NetFast', 199.90, 110.00, 'ATIVO'),
-(6, 'Switch 8 Portas', 'NetFast', 159.90, 90.00, 'ATIVO');
-
--- =====================================================
--- CARGA DE CLIENTES
--- =====================================================
+(6, 'Switch 8 Portas', 'NetFast', 159.90, 90.00, 'ATIVO'),
+(6, 'Placa de Rede Wi-Fi', 'NetFast', 139.90, 75.00, 'ATIVO');
 
 INSERT INTO comercial.dim_cliente (
     nome_cliente, tipo_cliente, cidade, uf, data_cadastro
 )
 SELECT
     'Cliente ' || gs,
-    CASE 
-        WHEN gs % 4 = 0 THEN 'B2B'
-        ELSE 'B2C'
-    END,
+    CASE WHEN gs % 4 = 0 THEN 'B2B' ELSE 'B2C' END,
     CASE 
         WHEN gs % 5 = 0 THEN 'Sao Paulo'
         WHEN gs % 5 = 1 THEN 'Belo Horizonte'
@@ -194,23 +151,9 @@ SELECT
     CURRENT_DATE - ((RANDOM() * 1000)::INT)
 FROM generate_series(1, 500) AS gs;
 
--- =====================================================
--- CARGA DE VENDAS
--- 10.000 VENDAS SIMULADAS
--- CORRECAO: id_data calculado por linha com RANDOM() * COUNT(*)
--- em vez de subquery escalar (que retornava o mesmo id para todas as linhas)
--- =====================================================
-
 INSERT INTO comercial.fato_vendas (
-    id_data,
-    id_filial,
-    id_cliente,
-    numero_pedido,
-    forma_pagamento,
-    status_venda,
-    valor_bruto,
-    desconto,
-    valor_liquido
+    id_data, id_filial, id_cliente, numero_pedido,
+    forma_pagamento, status_venda, valor_bruto, desconto, valor_liquido
 )
 SELECT
     (1 + FLOOR(RANDOM() * (SELECT COUNT(*) FROM comercial.dim_calendario)))::INT,
@@ -225,84 +168,54 @@ SELECT
         ELSE 'Dinheiro'
     END,
     'CONCLUIDA',
-    ROUND((100 + RANDOM() * 8000)::NUMERIC, 2),
-    ROUND((RANDOM() * 500)::NUMERIC, 2),
+    0,
+    0,
     0
 FROM generate_series(1, 10000) AS gs;
 
-UPDATE comercial.fato_vendas
-SET valor_liquido = valor_bruto - desconto;
-
--- =====================================================
--- CARGA DE ITENS DE VENDA
--- DE 1 A 5 ITENS POR VENDA
--- =====================================================
-
 INSERT INTO comercial.fato_itens_venda (
-    id_venda,
-    id_produto,
-    quantidade,
-    valor_unitario,
-    custo_unitario,
-    valor_total,
-    custo_total
+    id_venda, id_produto, quantidade,
+    valor_unitario, custo_unitario, valor_total, custo_total
 )
 SELECT
     v.id_venda,
     p.id_produto,
-    (1 + FLOOR(RANDOM() * 5))::INT AS quantidade,
+    (1 + FLOOR(RANDOM() * 5))::INT,
     p.preco_venda,
     p.custo_produto,
     0,
     0
 FROM comercial.fato_vendas v
-JOIN LATERAL (
-    SELECT *
-    FROM comercial.dim_produto
-    ORDER BY RANDOM()
-    LIMIT (1 + FLOOR(RANDOM() * 5))::INT
-) p ON TRUE;
+JOIN comercial.dim_produto p
+    ON p.id_produto = ((v.id_venda - 1) % 20) + 1;
 
 UPDATE comercial.fato_itens_venda
 SET 
     valor_total = quantidade * valor_unitario,
     custo_total = quantidade * custo_unitario;
 
--- =====================================================
--- AJUSTE DO VALOR DA VENDA COM BASE NOS ITENS
--- =====================================================
-
 UPDATE comercial.fato_vendas v
 SET 
     valor_bruto = sub.total_bruto,
-    desconto = ROUND((sub.total_bruto * (RANDOM() * 0.10))::NUMERIC, 2),
-    valor_liquido = sub.total_bruto - ROUND((sub.total_bruto * (RANDOM() * 0.10))::NUMERIC, 2)
+    desconto = sub.desconto,
+    valor_liquido = sub.total_bruto - sub.desconto
 FROM (
     SELECT 
         id_venda,
-        SUM(valor_total) AS total_bruto
+        SUM(valor_total) AS total_bruto,
+        ROUND((SUM(valor_total) * (RANDOM() * 0.10))::NUMERIC, 2) AS desconto
     FROM comercial.fato_itens_venda
     GROUP BY id_venda
 ) sub
 WHERE sub.id_venda = v.id_venda;
 
--- =====================================================
--- INDICES PARA PERFORMANCE E FILTROS
--- =====================================================
-
 CREATE INDEX idx_vendas_data ON comercial.fato_vendas(id_data);
 CREATE INDEX idx_vendas_filial ON comercial.fato_vendas(id_filial);
 CREATE INDEX idx_vendas_cliente ON comercial.fato_vendas(id_cliente);
-
 CREATE INDEX idx_itens_venda ON comercial.fato_itens_venda(id_venda);
 CREATE INDEX idx_itens_produto ON comercial.fato_itens_venda(id_produto);
-
 CREATE INDEX idx_produto_categoria ON comercial.dim_produto(id_categoria);
 CREATE INDEX idx_calendario_data ON comercial.dim_calendario(data_completa);
-
--- =====================================================
--- MATERIALIZED VIEW PRINCIPAL
--- =====================================================
 
 CREATE MATERIALIZED VIEW comercial.vm_kpis_comercial_mensal AS
 SELECT
@@ -310,91 +223,43 @@ SELECT
     c.mes,
     c.nome_mes,
     DATE_TRUNC('month', c.data_completa)::DATE AS periodo,
-
     f.nome_filial,
     f.cidade,
     f.uf,
     f.regiao,
-
     cat.nome_categoria,
     p.nome_produto,
-
-    COUNT(DISTINCT v.id_venda)                          AS quantidade_de_vendas,
-    SUM(i.quantidade)                                   AS quantidade_vendida,
-    SUM(i.quantidade * i.valor_unitario)                AS faturamento_bruto,
-    SUM(v.desconto)                                     AS desconto_total,
-
-    SUM(i.quantidade * i.valor_unitario) - SUM(v.desconto) AS receita_liquida,
-
-    SUM(i.quantidade * i.custo_unitario)                AS custo_total,
-
-    (
-        SUM(i.quantidade * i.valor_unitario)
-        - SUM(v.desconto)
-        - SUM(i.quantidade * i.custo_unitario)
-    )                                                   AS margem_bruta,
-
+    COUNT(DISTINCT v.id_venda) AS quantidade_de_vendas,
+    SUM(i.quantidade) AS quantidade_vendida,
+    SUM(i.valor_total) AS faturamento_bruto,
+    SUM(v.desconto) AS desconto_total,
+    SUM(i.valor_total) - SUM(v.desconto) AS receita_liquida,
+    SUM(i.custo_total) AS custo_total,
+    SUM(i.valor_total) - SUM(v.desconto) - SUM(i.custo_total) AS margem_bruta,
     ROUND(
-        (
-            (
-                SUM(i.quantidade * i.valor_unitario)
-                - SUM(v.desconto)
-                - SUM(i.quantidade * i.custo_unitario)
-            )
-            / NULLIF(
-                SUM(i.quantidade * i.valor_unitario) - SUM(v.desconto),
-                0
-            )
-        ) * 100,
+        ((SUM(i.valor_total) - SUM(v.desconto) - SUM(i.custo_total))
+        / NULLIF(SUM(i.valor_total) - SUM(v.desconto), 0)) * 100,
         2
-    )                                                   AS margem_bruta_percentual,
-
+    ) AS margem_bruta_percentual,
     ROUND(
-        (
-            SUM(i.quantidade * i.valor_unitario) - SUM(v.desconto)
-        ) / NULLIF(COUNT(DISTINCT v.id_venda), 0),
+        (SUM(i.valor_total) - SUM(v.desconto))
+        / NULLIF(COUNT(DISTINCT v.id_venda), 0),
         2
-    )                                                   AS ticket_medio
-
+    ) AS ticket_medio
 FROM comercial.fato_itens_venda i
-JOIN comercial.fato_vendas      v   ON v.id_venda   = i.id_venda
-JOIN comercial.dim_calendario   c   ON c.id_data    = v.id_data
-JOIN comercial.dim_filial       f   ON f.id_filial  = v.id_filial
-JOIN comercial.dim_produto      p   ON p.id_produto = i.id_produto
-JOIN comercial.dim_categoria    cat ON cat.id_categoria = p.id_categoria
-
+JOIN comercial.fato_vendas v ON v.id_venda = i.id_venda
+JOIN comercial.dim_calendario c ON c.id_data = v.id_data
+JOIN comercial.dim_filial f ON f.id_filial = v.id_filial
+JOIN comercial.dim_produto p ON p.id_produto = i.id_produto
+JOIN comercial.dim_categoria cat ON cat.id_categoria = p.id_categoria
 WHERE v.status_venda = 'CONCLUIDA'
-
 GROUP BY
     c.ano, c.mes, c.nome_mes,
     DATE_TRUNC('month', c.data_completa)::DATE,
     f.nome_filial, f.cidade, f.uf, f.regiao,
     cat.nome_categoria, p.nome_produto;
 
--- =====================================================
--- INDICES NA MATERIALIZED VIEW
--- CORRECAO: removidos indices das views que nao existem
--- (vm_vendas_por_filial, vm_vendas_por_produto, vm_vendas_por_categoria,
---  vm_top_clientes, vm_evolucao_receita)
--- =====================================================
-
-CREATE INDEX idx_vm_comercial_periodo   ON comercial.vm_kpis_comercial_mensal(periodo);
-CREATE INDEX idx_vm_comercial_filial    ON comercial.vm_kpis_comercial_mensal(nome_filial);
-CREATE INDEX idx_vm_comercial_produto   ON comercial.vm_kpis_comercial_mensal(nome_produto);
+CREATE INDEX idx_vm_comercial_periodo ON comercial.vm_kpis_comercial_mensal(periodo);
+CREATE INDEX idx_vm_comercial_filial ON comercial.vm_kpis_comercial_mensal(nome_filial);
+CREATE INDEX idx_vm_comercial_produto ON comercial.vm_kpis_comercial_mensal(nome_produto);
 CREATE INDEX idx_vm_comercial_categoria ON comercial.vm_kpis_comercial_mensal(nome_categoria);
-
-COMMIT;
-
--- =====================================================
--- COMANDO PARA ATUALIZAR A VIEW QUANDO NECESSARIO
--- =====================================================
-
--- REFRESH MATERIALIZED VIEW comercial.vm_kpis_comercial_mensal;
-
--- =====================================================
--- CONSULTA DE VALIDACAO - rode após o COMMIT
--- Esperado: ~1800 linhas (60 meses x 10 filiais x 14 produtos)
--- =====================================================
-
--- SELECT COUNT(*) FROM comercial.vm_kpis_comercial_mensal;
--- SELECT MIN(periodo), MAX(periodo) FROM comercial.vm_kpis_comercial_mensal;
