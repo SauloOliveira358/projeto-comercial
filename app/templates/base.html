@@ -1,7 +1,18 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <div class="filtro-data">
+
+<div
+    id="alerta-banco-fora"
+
+    {% if banco_online %}
+        style="display: none;"
+    {% endif %}
+>
+    ⚠️ Conexão Com o Banco Perdida Recarregue a pagina para voltar a conexão
+</div>
+
+<div class="filtro-data">
 
     <div class="campo-data">
         <label for="dataInicio">Data Inicial</label>
@@ -16,30 +27,40 @@
 </div>
 
 <h3>Filiais</h3>
+
 <select id="filialSelect">
     <option value="">Todas as Filiais</option>
 </select>
 
-
 <h3>Categorias de Produtos</h3>
-<select  id="categoriaSelect">
-    <option value="">Todos as Categorias</option>
+
+<select id="categoriaSelect">
+    <option value="">Todas as Categorias</option>
 </select>
 
 <h3>Produtos</h3>
-<select  id="produtosSelect">
+
+<select id="produtosSelect">
     <option value="">Todos os Produtos</option>
 </select>
 
-
-<button id="btnAplicar">Aplicar Filtro</button>
+<button id="btnAplicar">
+    Aplicar Filtro
+</button>
 
 <hr>
 
+<p>
+    Receita Bruta:
+    R$
+    <span id="valorFaturamento">0.00</span>
+</p>
 
-<p>Receita Bruta: R$ <span id="valorFaturamento">0.00</span></p>
-<p>Receita Liquida: R$ <span id="valorReceita_liquida">0.00</span></p>
-
+<p>
+    Receita Liquida:
+    R$
+    <span id="valorReceita_liquida">0.00</span>
+</p>
 
 <script src="/static/js/script.js"></script>
 

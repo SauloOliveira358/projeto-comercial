@@ -1,4 +1,21 @@
 from sqlalchemy import text
+
+from app.db import get_session 
+
+def executar_validacao_banco():
+    """
+    Abre uma sessão temporária e testa a conexão com o Postgres.
+    Se o banco estiver fora, o SQLAlchemy lança a exceção.
+    """
+    session = get_session()
+    try:
+        session.execute(text("SELECT 1"))
+    finally:
+        session.close() # Garante que a sessão feche para não travar o pool
+
+
+
+
     
 def get_filiais():
     """Retorna a query para listar as filiais únicas."""

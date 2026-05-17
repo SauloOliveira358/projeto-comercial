@@ -4,13 +4,47 @@ from app.services import bi_queries
 from sqlalchemy import text 
 
 
+
 def init_routes(app):
    
 
+    
+
+
     @app.route("/")
     def index():
-        """Renderiza a página principal do Dashboard."""
-        return render_template("base.html")
+
+        banco_online = True
+
+        session = get_session()
+
+        try:
+
+            session.execute(text("SELECT 1"))
+
+        except Exception:
+
+            banco_online = False
+
+        finally:
+
+            session.close()
+
+        return render_template(
+            "base.html",
+            banco_online=banco_online
+        )
+
+
+ 
+
+
+
+
+
+
+
+
 
     @app.route("/filiais")
     def filiais():
@@ -24,6 +58,7 @@ def init_routes(app):
             lista_filiais = [row.nome_filial for row in result]
             
             return jsonify(lista_filiais)
+        
         except Exception as e:
             return jsonify({"erro": str(e)}), 500
         finally:
@@ -291,3 +326,11 @@ def init_routes(app):
             return jsonify({"erro": str(e)}), 500
         finally:
             session.close()
+
+
+
+
+
+
+
+ 

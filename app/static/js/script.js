@@ -12,6 +12,23 @@ const btn = document.getElementById('btnAplicar');
 const dataInicioInput = document.getElementById('dataInicio');
 const dataFimInput = document.getElementById('dataFim');
 
+// ALERTA BANCO
+
+const erroBanco =
+    document.getElementById("alerta-banco-fora");
+
+function mostrarErroBanco() {
+
+    erroBanco.style.display = "block";
+}
+
+function esconderErroBanco() {
+
+    erroBanco.style.display = "none";
+}
+
+
+
 /* =========================
    BUSCAR DADOS
 ========================= */
@@ -38,9 +55,20 @@ async function buscarDados() {
 
      
         //Faturamento
-        const res_bruto = await fetch(`/faturamento?${params.toString()}`);
-        const res_liquida = await fetch(`/receita_liquida?${params.toString()}`);
+        const [res_bruto, res_liquida] = await Promise.all([
+    fetch(`/faturamento?${params.toString()}`),
+    fetch(`/receita_liquida?${params.toString()}`)
+]);
+        // SE O BANCO CAIR
+        if (!res_bruto.ok || !res_liquida.ok) {
+
+    window.location.reload();
+
+    return;
+}
        
+        // BANCO OK
+        esconderErroBanco();
 
         const valor_receita_bruta = await res_bruto.json();
         const valor_receita_liquida = await res_liquida.json();
@@ -53,6 +81,7 @@ async function buscarDados() {
     } catch (e) {
 
         console.error("Erro ao buscar dados:", e);
+        mostrarErroBanco();
 
     }
 }
@@ -92,6 +121,13 @@ async function carregarProdutos(categoria = "") {
     try {
 
         const res = await fetch(`/produtos?categoria=${categoria}`);
+        if (!res.ok) {
+
+            mostrarErroBanco();
+
+            return;
+        }
+        esconderErroBanco();
 
         const nomes = await res.json();
 
@@ -112,6 +148,7 @@ async function carregarProdutos(categoria = "") {
     } catch (e) {
 
         console.error("Erro ao carregar produtos:", e);
+        mostrarErroBanco();
 
     }
 }
@@ -153,9 +190,12 @@ selectCategoria.addEventListener("change", () => {
 ========================= */
 (async function init() {
 
-    await carregarFiliais();
-    await carregarProdutos();
-    await carregarCategorias();
+    await Promise.all([
+        carregarFiliais(),
+        carregarProdutos(),
+        carregarCategorias()
+    ]);
+
     await buscarDados();
 
 })();
