@@ -329,8 +329,267 @@ def init_routes(app):
 
 
 
+    @app.route("/custo_total", methods=["GET"])
+    def get_custo_total():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_custo_total(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchone()
+
+            # Tratamento para não retornar erro se o banco estiver vazio
+            valor_bruto = result[0] if result and result[0] is not None else 0.0
+            
+            # Força o formato "0.00"
+            valor_formatado = "{:.2f}".format(float(valor_bruto))
+            
+            return jsonify(valor_formatado)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
 
 
 
+  # =========================
+# ROTAS DAS PERGUNTAS
+# =========================
 
- 
+    @app.route("/pergunta_faturamento", methods=["GET"])
+    def get_pergunta_faturamento():
+
+        session = get_session()
+
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+
+        try:
+
+            query, params = bi_queries.pergunta_faturamento(
+                filial,
+                produto,
+                categoria,
+                inicio,
+                fim
+            )
+
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "periodo": str(row.periodo),
+                    "receita_bruta": float(row.receita_bruta or 0),
+                    "desconto_total": float(row.desconto_total or 0),
+                    "receita_liquida": float(row.receita_liquida or 0),
+                    "quantidade_vendida": int(row.quantidade_vendida or 0),
+                    "quantidade_de_vendas": int(row.quantidade_de_vendas or 0)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+
+        except Exception as e:
+
+            return jsonify({"erro": str(e)}), 500
+
+        finally:
+
+            session.close()
+
+
+    @app.route("/pergunta_receita_liquida", methods=["GET"])
+    def get_pergunta_receita_liquida():
+
+        session = get_session()
+
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+
+        try:
+
+            query, params = bi_queries.pergunta_receita_liquida(
+                filial,
+                produto,
+                categoria,
+                inicio,
+                fim
+            )
+
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "filial": row.nome_filial,
+                    "receita_bruta": float(row.receita_bruta or 0),
+                    "desconto_total": float(row.desconto_total or 0),
+                    "receita_liquida": float(row.receita_liquida or 0),
+                    "custo_total": float(row.custo_total or 0),
+                    "margem_bruta": float(row.margem_bruta or 0),
+                    "margem_bruta_percentual": float(row.margem_bruta_percentual or 0)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+
+        except Exception as e:
+
+            return jsonify({"erro": str(e)}), 500
+
+        finally:
+
+            session.close()
+
+
+    @app.route("/pergunta_receita_liquida_categoria", methods=["GET"])
+    def get_pergunta_receita_liquida_categoria():
+
+        session = get_session()
+
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+
+        try:
+
+            query, params = bi_queries.pergunta_receita_liquida_por_categoria(
+                filial,
+                produto,
+                categoria,
+                inicio,
+                fim
+            )
+
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "categoria": row.categoria,
+                    "quantidade_vendida": int(row.quantidade_vendida or 0),
+                    "receita_bruta": float(row.receita_bruta or 0),
+                    "receita_liquida": float(row.receita_liquida or 0),
+                    "margem_bruta": float(row.margem_bruta or 0),
+                    "margem_bruta_percentual": float(row.margem_bruta_percentual or 0)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+
+        except Exception as e:
+
+            return jsonify({"erro": str(e)}), 500
+
+        finally:
+
+            session.close()
+
+
+    @app.route("/pergunta_produtos_vendidos", methods=["GET"])
+    def get_pergunta_produtos_vendidos():
+
+        session = get_session()
+
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+
+        try:
+
+            query, params = bi_queries.pergunta_produtos_vendidos(
+                filial,
+                produto,
+                categoria,
+                inicio,
+                fim
+            )
+
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "produto": row.nome_produto,
+                    "categoria": row.categoria,
+                    "quantidade_vendida": int(row.quantidade_vendida or 0),
+                    "receita_bruta": float(row.receita_bruta or 0),
+                    "receita_liquida": float(row.receita_liquida or 0)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+
+        except Exception as e:
+
+            return jsonify({"erro": str(e)}), 500
+
+        finally:
+
+            session.close()
+
+
+    @app.route("/pergunta_margem_bruta", methods=["GET"])
+    def get_pergunta_margem_bruta():
+
+        session = get_session()
+
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+
+        try:
+
+            query, params = bi_queries.pergunta_margem_bruta(
+                filial,
+                produto,
+                categoria,
+                inicio,
+                fim
+            )
+
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "periodo": str(row.periodo),
+                    "filial": row.nome_filial,
+                    "categoria": row.categoria,
+                    "receita_liquida": float(row.receita_liquida or 0),
+                    "custo_total": float(row.custo_total or 0),
+                    "margem_bruta": float(row.margem_bruta or 0),
+                    "margem_bruta_percentual": float(row.margem_bruta_percentual or 0)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+
+        except Exception as e:
+
+            return jsonify({"erro": str(e)}), 500
+
+        finally:
+
+            session.close()
