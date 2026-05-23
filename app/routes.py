@@ -214,6 +214,38 @@ def init_routes(app):
             valor_bruto = result[0] if result and result[0] is not None else 0.0
             
             # Força o formato "0.00"
+            valor_formatado = "{:.1f}".format(float(valor_bruto))
+            
+            return jsonify(valor_formatado)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
+
+
+
+
+    @app.route("/custo_total", methods=["GET"])
+    def get_custo_total():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_custo_total(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchone()
+
+            # Tratamento para não retornar erro se o banco estiver vazio
+            valor_bruto = result[0] if result and result[0] is not None else 0.0
+            
+            # Força o formato "0.00"
             valor_formatado = "{:.2f}".format(float(valor_bruto))
             
             return jsonify(valor_formatado)
@@ -221,6 +253,128 @@ def init_routes(app):
             return jsonify({"erro": str(e)}), 500
         finally:
             session.close()
+
+
+
+
+    @app.route("/desconto_total", methods=["GET"])
+    def get_desconto_total_():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_desconto_total(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchone()
+
+            # Tratamento para não retornar erro se o banco estiver vazio
+            valor_bruto = result[0] if result and result[0] is not None else 0.0
+            
+            # Força o formato "0.00"
+            valor_formatado = "{:.2f}".format(float(valor_bruto))
+            
+            return jsonify(valor_formatado)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
+
+
+    @app.route("/quantidade_vendida", methods=["GET"])
+    def get_quantidade_vendida():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_quantidade_vendida(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchone()
+
+            # Tratamento para não retornar erro se o banco estiver vazio
+            valor_bruto = result[0] if result and result[0] is not None else 0.0
+            
+            # Força o formato "0.00"
+            valor_formatado = "{:.0f}".format(float(valor_bruto))
+            
+            return jsonify(valor_formatado)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
+    
+
+
+
+    @app.route("/ticket_medio", methods=["GET"])
+    def get_ticket_medio():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_ticket_medio(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchone()
+
+            # Tratamento para não retornar erro se o banco estiver vazio
+            valor_bruto = result[0] if result and result[0] is not None else 0.0
+            
+            # Força o formato "0.00"
+            valor_formatado = "{:.2f}".format(float(valor_bruto))
+            
+            return jsonify(valor_formatado)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -329,34 +483,72 @@ def init_routes(app):
 
 
 
-    @app.route("/custo_total", methods=["GET"])
-    def get_custo_total():
-        """Retorna o valor do faturamento formatado com 2 casas decimais."""
-        session = get_session()
-        
-        # Captura os parâmetros da URL
-        filial = request.args.get('filial')
-        produto = request.args.get('produto')
-        categoria = request.args.get('categoria')
-        inicio = request.args.get('inicio')
-        fim = request.args.get('fim')
-        
+    
 
-        try:
-            query, params = bi_queries.get_custo_total(filial,produto,categoria, inicio, fim)
-            result = session.execute(query, params).fetchone()
 
-            # Tratamento para não retornar erro se o banco estiver vazio
-            valor_bruto = result[0] if result and result[0] is not None else 0.0
-            
-            # Força o formato "0.00"
-            valor_formatado = "{:.2f}".format(float(valor_bruto))
-            
-            return jsonify(valor_formatado)
-        except Exception as e:
-            return jsonify({"erro": str(e)}), 500
-        finally:
-            session.close()
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

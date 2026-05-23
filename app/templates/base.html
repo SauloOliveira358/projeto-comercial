@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
-<body>
+    <head>
+    <meta charset="UTF-8">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>0
 
 <div
     id="alerta-banco-fora"
@@ -62,6 +67,55 @@
     <span id="valorReceita_liquida">0.00</span>
 </p>
 
+<p>
+    Desconto Total:
+    R$
+    <span id="valorDescontoTotal">0.00</span>
+</p>
+
+<p>
+    Custo Total:
+    R$
+    <span id="valorCustoTotal">0.00</span>
+</p>
+
+
+<p>
+    Margem Bruta:
+    R$
+    <span id="valorMargemBruta">0.00</span>
+</p>
+
+<p>
+    Margem Bruta Percentual:
+    <span id="valorMargem_percentual">0.00</span>%
+</p>
+
+<p>
+    Quantidade Vendida:
+    <span id="valorQuantidadeVendida">0.00</span>
+</p>
+
+<p>
+    Ticket Médio:
+    <span id="valorTicketMedio">0.00</span>
+</p>
+
+
+<div >
+     <div style="width: 600px;">
+        <canvas id="Grafico1"></canvas>
+    </div>
+    <div style="width: 800px;">
+        <canvas id="Grafico2"></canvas>
+    </div>
+    <div style="width: 800px;">
+        <canvas id="Grafico3"></canvas>
+    </div>
+    <div style="width: 800px;">
+        <canvas id="Grafico4"></canvas>
+    </div>
+</div>
 <script src="/static/js/script.js"></script>
 
 </body>

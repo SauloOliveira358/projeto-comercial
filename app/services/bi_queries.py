@@ -201,6 +201,98 @@ def get_custo_total(filial=None,produto = None,categoria = None, data_inicio=Non
 
 
 
+def get_desconto_total(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT SUM(desconto_total) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    return text(sql), params
+
+
+
+
+
+
+def get_quantidade_vendida(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT SUM(quantidade_vendida) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    return text(sql), params
+
+
+
+
+def get_ticket_medio(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query da receita liquida dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT SUM(ticket_medio) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    return text(sql), params
+
+
+
+
 
 
 
