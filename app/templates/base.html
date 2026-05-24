@@ -1,122 +1,121 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <meta charset="UTF-8">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Dashboard Comercial</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>0
+        <header>
+            <h1>Dashboard Comercial — Projeto</h1>
+        </header>
 
-<div
-    id="alerta-banco-fora"
+        <main class="app-container">
 
-    {% if banco_online %}
-        style="display: none;"
-    {% endif %}
->
-    ⚠️ Conexão Com o Banco Perdida Recarregue a pagina para voltar a conexão
-</div>
+            <aside class="sidebar">
 
-<div class="filtro-data">
+                <div id="alerta-banco-fora" {% if banco_online %} style="display:none;" {% endif %}>
+                    ⚠️ Conexão com o banco perdida. Recarregue a página.
+                </div>
 
-    <div class="campo-data">
-        <label for="dataInicio">Data Inicial</label>
-        <input type="date" id="dataInicio">
-    </div>
+                <div class="filtro-data">
+                    <div class="campo-data">
+                        <label for="dataInicio">Data Inicial</label>
+                        <input type="date" id="dataInicio">
+                    </div>
+                    <div class="campo-data">
+                        <label for="dataFim">Data Final</label>
+                        <input type="date" id="dataFim">
+                    </div>
+                </div>
 
-    <div class="campo-data">
-        <label for="dataFim">Data Final</label>
-        <input type="date" id="dataFim">
-    </div>
+                <div style="margin-top:12px;">
+                    <label class="small" for="filialSelect">Filial</label>
+                    <select id="filialSelect" class="select-full"></select>
+                </div>
 
-</div>
+                <div style="margin-top:12px;">
+                    <label class="small" for="categoriaSelect">Categoria</label>
+                    <select id="categoriaSelect" class="select-full"></select>
+                </div>
 
-<h3>Filiais</h3>
+                <div style="margin-top:12px;">
+                    <label class="small" for="produtosSelect">Produto</label>
+                    <select id="produtosSelect" class="select-full"></select>
+                </div>
 
-<select id="filialSelect">
-    <option value="">Todas as Filiais</option>
-</select>
+                <div style="margin-top:14px;">
+                    <button id="btnAplicar" class="btn">Aplicar Filtros</button>
+                </div>
 
-<h3>Categorias de Produtos</h3>
+            </aside>
 
-<select id="categoriaSelect">
-    <option value="">Todas as Categorias</option>
-</select>
+            <section class="main">
 
-<h3>Produtos</h3>
+                <div class="kpis">
+                    <div class="card">
+                        <div class="label">Receita Bruta</div>
+                        <div class="value">R$ <span id="valorFaturamento">0.00</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Receita Líquida</div>
+                        <div class="value">R$ <span id="valorReceita_liquida">0.00</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Desconto Total</div>
+                        <div class="value">R$ <span id="valorDescontoTotal">0.00</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Custo Total</div>
+                        <div class="value">R$ <span id="valorCustoTotal">0.00</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Margem Bruta</div>
+                        <div class="value">R$ <span id="valorMargemBruta">0.00</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Margem Bruta %</div>
+                        <div class="value"><span id="valorMargem_percentual">0.0</span>%</div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Quantidade Vendida</div>
+                        <div class="value"><span id="valorQuantidadeVendida">0</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Ticket Médio</div>
+                        <div class="value">R$ <span id="valorTicketMedio">0.00</span></div>
+                    </div>
+                </div>
 
-<select id="produtosSelect">
-    <option value="">Todos os Produtos</option>
-</select>
+                <div class="charts">
+                    <div class="chart-card">
+                        <h4 class="small">Faturamento Mensal</h4>
+                        <canvas id="Grafico1"></canvas>
+                    </div>
 
-<button id="btnAplicar">
-    Aplicar Filtro
-</button>
+                    <div class="chart-card">
+                        <h4 class="small">Receita Líquida por Período</h4>
+                        <canvas id="Grafico2"></canvas>
+                    </div>
 
-<hr>
+                    <div class="chart-card">
+                        <h4 class="small">Margem Bruta (%)</h4>
+                        <canvas id="Grafico3"></canvas>
+                    </div>
 
-<p>
-    Receita Bruta:
-    R$
-    <span id="valorFaturamento">0.00</span>
-</p>
+                    <div class="chart-card">
+                        <h4 class="small">Produtos Mais Vendidos</h4>
+                        <canvas id="Grafico4"></canvas>
+                    </div>
+                </div>
 
-<p>
-    Receita Liquida:
-    R$
-    <span id="valorReceita_liquida">0.00</span>
-</p>
+            </section>
 
-<p>
-    Desconto Total:
-    R$
-    <span id="valorDescontoTotal">0.00</span>
-</p>
+        </main>
 
-<p>
-    Custo Total:
-    R$
-    <span id="valorCustoTotal">0.00</span>
-</p>
-
-
-<p>
-    Margem Bruta:
-    R$
-    <span id="valorMargemBruta">0.00</span>
-</p>
-
-<p>
-    Margem Bruta Percentual:
-    <span id="valorMargem_percentual">0.00</span>%
-</p>
-
-<p>
-    Quantidade Vendida:
-    <span id="valorQuantidadeVendida">0.00</span>
-</p>
-
-<p>
-    Ticket Médio:
-    <span id="valorTicketMedio">0.00</span>
-</p>
-
-
-<div >
-     <div style="width: 600px;">
-        <canvas id="Grafico1"></canvas>
-    </div>
-    <div style="width: 800px;">
-        <canvas id="Grafico2"></canvas>
-    </div>
-    <div style="width: 800px;">
-        <canvas id="Grafico3"></canvas>
-    </div>
-    <div style="width: 800px;">
-        <canvas id="Grafico4"></canvas>
-    </div>
-</div>
-<script src="/static/js/script.js"></script>
-
-</body>
+        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    </body>
 </html>
