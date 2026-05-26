@@ -3,7 +3,7 @@ const selectProduto = document.getElementById('produtosSelect');
 const selectCategoria = document.getElementById('categoriaSelect');
 
 
-
+let bancoEstavaOffline = false;
 //KPIS
 
 const display_Receita_Bruta = document.getElementById('valorFaturamento');
@@ -23,6 +23,10 @@ const display_grafico4 = document.getElementById('Grafico4')
 
 //Grafico iniciar
 let grafico1 = null;
+let grafico2 = null;
+let grafico3 = null;
+let grafico4 = null;
+
 
 //botão aplicar
 const btn = document.getElementById('btnAplicar');
@@ -39,11 +43,14 @@ const erroBanco =
 function mostrarErroBanco() {
 
     erroBanco.style.display = "block";
+    bancoEstavaOffline = true;
 }
 
 function esconderErroBanco() {
 
     erroBanco.style.display = "none";
+
+    bancoEstavaOffline = false;
 }
 
 
@@ -90,7 +97,7 @@ async function buscarDados() {
         // SE O BANCO CAIR
         if (!res_bruto.ok || !res_liquida.ok) {
 
-    window.location.reload();
+    mostrarErroBanco();
 
     return;
 }
@@ -129,6 +136,9 @@ async function buscarDados() {
 
 
         await carregarGrafico1();
+        await carregarGrafico2();
+        await carregarGrafico3();
+        await carregarGrafico4();
 
 
     } catch (e) {
@@ -206,24 +216,44 @@ async function carregarProdutos(categoria = "") {
     }
 }
 
-async function carregarCategorias() {
+async function carregarCategorias(produto = "") {
 
-    try{
-    const res = await fetch('/categorias');
-    const nomes = await res.json();
+    try {
 
-    selectCategoria.innerHTML = '<option value ="">Todas as Categorias</option>';
+        const res =
+            await fetch(`/categorias?produto=${produto}`);
 
-    nomes.forEach(nome => {
-        const opt = document.createElement('option');
+        if (!res.ok) {
 
-        opt.value = nome;
-        opt.text = nome;
-        selectCategoria.appendChild(opt);
-    });
-}catch (e){
-    console.error("Erro ao carregar produtos:", e)
-}
+            mostrarErroBanco();
+
+            return;
+        }
+
+        esconderErroBanco();
+
+        const nomes = await res.json();
+
+        selectCategoria.innerHTML =
+            '<option value="">Todas as Categorias</option>';
+
+        nomes.forEach(nome => {
+
+            const opt = document.createElement('option');
+
+            opt.value = nome;
+            opt.text = nome;
+
+            selectCategoria.appendChild(opt);
+
+        });
+
+    } catch (e) {
+
+        console.error("Erro ao carregar categorias:", e);
+
+        mostrarErroBanco();
+    }
 }
 
 //Graficos
@@ -323,7 +353,7 @@ async function carregarGrafico2() {
     params.append("fim", dataFim);
 
     const resposta =
-        await fetch(`/grafico_receita_bruta?${params.toString()}`);
+        await fetch(`/grafico_receita_liquida?${params.toString()}`);
 
     const dados = await resposta.json();
 
@@ -332,11 +362,11 @@ async function carregarGrafico2() {
     const labels = dados.map(item => item.periodo);
 
     const valores = dados.map(item => item.total);
-    if (grafico1) {
-    grafico1.destroy();
+    if (grafico2) {
+    grafico2.destroy();
 }
 
-    grafico1 = new Chart(display_grafico1, {
+    grafico2 = new Chart(display_grafico2, {
 
         type: 'line',
 
@@ -345,7 +375,7 @@ async function carregarGrafico2() {
             labels: labels,
 
             datasets: [{
-                label: 'Receita Bruta',
+                label: 'Receita liquida',
 
                 data: valores,
 
@@ -382,6 +412,154 @@ async function carregarGrafico2() {
 
 
 
+
+
+//grafico 3 
+async function carregarGrafico3() {
+
+    const filial = selectFilial.value;
+    const produto = selectProduto.value;
+    const categoria = selectCategoria.value;
+    const dataInicio = dataInicioInput.value;
+    const dataFim = dataFimInput.value;
+
+    const params = new URLSearchParams();
+
+    params.append("filial", filial);
+    params.append("produto", produto);
+    params.append("categoria", categoria);
+    params.append("inicio", dataInicio);
+    params.append("fim", dataFim);
+
+    const resposta =
+        await fetch(`/grafico_margem_bruta_percentual?${params.toString()}`);
+
+    const dados = await resposta.json();
+
+    console.log(dados);
+
+    const labels = dados.map(item => item.periodo);
+
+    const valores = dados.map(item => item.total);
+    if (grafico3) {
+    grafico3.destroy();
+}
+
+    grafico3 = new Chart(display_grafico3, {
+
+        type: 'line',
+
+        data: {
+
+            labels: labels,
+
+            datasets: [{
+                label: 'Margem Bruta Percentual',
+
+                data: valores,
+
+                borderWidth: 1
+            }]
+        },
+
+        options: {
+
+            responsive: true,
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true,
+
+                    ticks: {
+
+                        callback: function(valor) {
+
+                           return valor.toFixed(1) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+
+async function carregarGrafico4() {
+
+    const filial = selectFilial.value;
+    const produto = selectProduto.value;
+    const categoria = selectCategoria.value;
+    const dataInicio = dataInicioInput.value;
+    const dataFim = dataFimInput.value;
+
+    const params = new URLSearchParams();
+
+    params.append("filial", filial);
+    params.append("produto", produto);
+    params.append("categoria", categoria);
+    params.append("inicio", dataInicio);
+    params.append("fim", dataFim);
+
+    const resposta =
+        await fetch(`/grafico_produtos_vendidos?${params.toString()}`);
+
+    const dados = await resposta.json();
+
+    console.log(dados);
+
+    const labels = dados.map(item => item.nome_produto);
+
+    const valores = dados.map(item => item.total);
+    if (grafico4) {
+    grafico4.destroy();
+}
+
+    grafico4 = new Chart(display_grafico4, {
+
+        type: 'bar',
+
+        data: {
+
+            labels: labels,
+
+            datasets: [{
+                label: 'Quantidade Vendida',
+
+                data: valores,
+
+                borderWidth: 1
+            }]
+        },
+
+        options: {
+
+            responsive: true,
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true,
+
+                    ticks: {
+
+                        callback: function(valor) {
+
+                           return valor;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+
+
     
 
 /* =========================
@@ -389,11 +567,52 @@ async function carregarGrafico2() {
 ========================= */
 btn.addEventListener('click', buscarDados);
 
-selectCategoria.addEventListener("change", () => {
+selectCategoria.addEventListener("change", async () => {
 
-    carregarProdutos(selectCategoria.value);
+    const categoria = selectCategoria.value;
+
+    await carregarProdutos(categoria);
+
+    // se voltou para TODOS
+    if (categoria === "") {
+
+        selectProduto.value = "";
+    }
+});
+
+
+selectProduto.addEventListener("change", async () => {
+
+    const produto = selectProduto.value;
+
+    await carregarCategorias(produto);
+
+    // se voltou para TODOS
+    if (produto === "") {
+
+        selectCategoria.value = "";
+    }
+});
+
+
+
+
+const btnLimpar = document.getElementById('btnLimpar');
+
+btnLimpar.addEventListener('click', () => {
+
+    window.location.reload();
 
 });
+
+
+
+
+
+
+
+
+
 
 /* =========================
    INICIALIZAÇÃO

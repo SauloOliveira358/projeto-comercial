@@ -44,15 +44,22 @@ def get_produtos(categoria=None):
 
     return text(sql)
 
-def get_categorias():
+def get_categorias(produto=None):
     """Retorna a Query da lista de Categorias"""
 
     sql = """
-                SELECT nome_categoria
-                FROM comercial.vm_kpis_comercial_mensal
-                GROUP BY nome_categoria
-                Order BY nome_categoria
-                """
+        SELECT DISTINCT nome_categoria
+        FROM comercial.vm_kpis_comercial_mensal
+        WHERE 1=1
+    """
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+
+    sql += """
+        ORDER BY nome_categoria
+    """
+
     return text(sql)
 
 
@@ -404,6 +411,40 @@ def get_grafico_margem_bruta_percentual(filial=None,produto = None,categoria = N
     
 
     return text(sql), params
+
+
+
+
+
+def get_grafico_produtos_vendidos(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query do grafico margem media percentual a dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT nome_produto, SUM(quantidade_vendida) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+    sql += " group by nome_produto Order By SUM(Quantidade_vendida) desc LIMIT 10 "
+    
+
+    return text(sql), params
+
 
 
 

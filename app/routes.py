@@ -87,16 +87,33 @@ def init_routes(app):
 
     @app.route("/categorias")
     def categorias():
-        session = get_session()
-        try:
-            query = bi_queries.get_categorias()
-            result = session.execute(query)
 
-            lista_categorias = [row.nome_categoria for row in result]
+        session = get_session()
+
+        produto = request.args.get("produto")
+
+        try:
+
+            query = bi_queries.get_categorias(produto)
+
+            result = session.execute(
+                query,
+                {"produto": produto}
+            )
+
+            lista_categorias = [
+                row.nome_categoria
+                for row in result
+            ]
+
             return jsonify(lista_categorias)
+
         except Exception as e:
-            return jsonify({"erro": str(e)}),500
+
+            return jsonify({"erro": str(e)}), 500
+
         finally:
+
             session.close()
 
     @app.route("/faturamento", methods=["GET"])
@@ -486,7 +503,36 @@ def init_routes(app):
     
 
 
+    @app.route("/grafico_produtos_vendidos", methods=["GET"])
+    def get_grafico_produtos_vendidos():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
 
+        try:
+            query, params = bi_queries.get_grafico_produtos_vendidos(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "nome_produto": str(row.nome_produto),
+                    "total": round(float(row.total), 1)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
     
 
 
