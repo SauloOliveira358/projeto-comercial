@@ -542,6 +542,71 @@ def init_routes(app):
 
 
 
+    @app.route("/grafico_receitaliquida_por_filial", methods=["GET"])
+    def get_grafico_receitaliquida_filial():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_grafico_receitaLiquida_filial(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "nome_filial": str(row.nome_filial),
+                    "total": round(float(row.total), 1)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
+
+
+
+
+
+    @app.route("/grafico_receitaliquida_por_categoria", methods=["GET"])
+    def get_grafico_receitaliquida_categoria():
+        """Retorna o valor do faturamento formatado com 2 casas decimais."""
+        session = get_session()
+        
+        # Captura os parâmetros da URL
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
+        
+
+        try:
+            query, params = bi_queries.get_grafico_receitaLiquida_categoria(filial,produto,categoria, inicio, fim)
+            result = session.execute(query, params).fetchall()
+
+            dados = [
+                {
+                    "nome_categoria": str(row.nome_categoria),
+                    "total": round(float(row.total), 1)
+                }
+                for row in result
+            ]
+
+            return jsonify(dados)
+        except Exception as e:
+            return jsonify({"erro": str(e)}), 500
+        finally:
+            session.close()
 
 
 
@@ -549,21 +614,150 @@ def init_routes(app):
 
 
 
+    @app.route("/matriz_margem_bruta", methods=["GET"])
+    def get_matriz_margem_bruta():
 
+        session = get_session()
 
+        # =========================
+        # FILTROS
+        # =========================
+        filial = request.args.get('filial')
+        produto = request.args.get('produto')
+        categoria = request.args.get('categoria')
+        inicio = request.args.get('inicio')
+        fim = request.args.get('fim')
 
+        try:
 
+            # =========================
+            # QUERY
+            # =========================
+            query, params = bi_queries.get_matriz_margem_mes_filial_categoria(
+                filial,
+                produto,
+                categoria,
+                inicio,
+                fim
+            )
 
+            result = session.execute(
+                query,
+                params
+            ).fetchall()
 
+            # =========================
+            # MATRIZ FINAL
+            # =========================
+            matriz = {}
 
+            # =========================
+            # LOOP RESULTADOS
+            # =========================
+            for row in result:
 
+                nome_filial = str(row[0])
 
+                nome_categoria = str(row[1])
 
+                periodo = row[2].strftime("%m/%Y")
 
+                total = round(
+                    float(row[3]),
+                    2
+                )
 
+                # =========================
+                # FILIAL
+                # =========================
+                if nome_filial not in matriz:
 
+                    matriz[nome_filial] = {
 
+                        "filial": nome_filial,
 
+                        "total": 0,
+
+                        "categorias": []
+                    }
+
+                filial_obj = matriz[nome_filial]
+
+                filial_obj["total"] += total
+
+                # =========================
+                # PROCURA CATEGORIA
+                # =========================
+                categoria_existente = next(
+
+                    (
+                        c for c in filial_obj["categorias"]
+
+                        if c["categoria"]
+                        == nome_categoria
+                    ),
+
+                    None
+                )
+
+                # =========================
+                # CRIA CATEGORIA
+                # =========================
+                if not categoria_existente:
+
+                    categoria_existente = {
+
+                        "categoria": nome_categoria,
+
+                        "total": 0,
+
+                        "periodos": []
+                    }
+
+                    filial_obj["categorias"].append(
+                        categoria_existente
+                    )
+
+                categoria_existente["total"] += total
+
+                # =========================
+                # ADICIONA PERÍODO
+                # =========================
+                categoria_existente["periodos"].append({
+
+                    "periodo": periodo,
+
+                    "total": total
+                })
+
+            # =========================
+            # ORDENA CATEGORIAS
+            # =========================
+            for filial in matriz.values():
+
+                filial["categorias"].sort(
+
+                    key=lambda c: c["total"],
+
+                    reverse=True
+                )
+
+            # =========================
+            # RETORNO FINAL
+            # =========================
+            return jsonify(
+                list(matriz.values())
+            )
+
+        except Exception as e:
+
+            return jsonify({
+                "erro": str(e)
+            }), 500
+
+        finally:
+
+            session.close()
 
 
 

@@ -219,25 +219,77 @@ async function carregarGrafico1() {
    GRÁFICO 2 — Receita Líquida
    ========================================================= */
 async function carregarGrafico2() {
-    const dados = await fetchGraficoDados('grafico_receita_liquida');
-    const labels  = dados.map(d => d.periodo);
+
+    const dados = await fetchGraficoDados(
+        'grafico_receitaliquida_por_filial'
+    );
+
+    const labels = dados.map(d => d.nome_filial);
+
     const valores = dados.map(d => d.total);
+
     destroyChart(grafico2);
 
     grafico2 = new Chart(display_grafico2, {
-        type: 'line',
-        data: { labels, datasets: [buildLineDataset('Receita Líquida', valores, PALETTE.teal)] },
+
+        type: 'bar',
+
+        data: {
+
+            labels,
+
+            datasets: [{
+                
+                label: 'Receita Líquida',
+                data: valores,
+                backgroundColor: '#3498db',
+                borderColor: '#000000',
+                 borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+
         options: {
+
             ...CHART_DEFAULTS,
+
             scales: {
+
                 ...CHART_DEFAULTS.scales,
-                y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: brlTick } }
+
+                y: {
+
+                    ...CHART_DEFAULTS.scales.y,
+
+                    ticks: {
+
+                        ...CHART_DEFAULTS.scales.y.ticks,
+
+                        callback: brlTick
+                    }
+                }
             },
+
             plugins: {
+
                 ...CHART_DEFAULTS.plugins,
-                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
-                    label: ctx => 'R$ ' + ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-                }}
+
+                tooltip: {
+
+                    ...CHART_DEFAULTS.plugins.tooltip,
+
+                    callbacks: {
+
+                        label: ctx =>
+                            'R$ ' +
+                            ctx.parsed.y.toLocaleString(
+                                'pt-BR',
+                                {
+                                    minimumFractionDigits: 2
+                                }
+                            )
+                    }
+                }
             }
         }
     });
@@ -246,33 +298,100 @@ async function carregarGrafico2() {
 /* =========================================================
    GRÁFICO 3 — Margem Bruta %
    ========================================================= */
+
 async function carregarGrafico3() {
-    const dados = await fetchGraficoDados('grafico_margem_bruta_percentual');
-    const labels  = dados.map(d => d.periodo);
+
+    const dados = await fetchGraficoDados(
+        'grafico_receitaliquida_por_categoria'
+    );
+
+    const labels = dados.map(d => d.nome_categoria);
+
     const valores = dados.map(d => d.total);
+
     destroyChart(grafico3);
 
     grafico3 = new Chart(display_grafico3, {
-        type: 'line',
-        data: { labels, datasets: [buildLineDataset('Margem Bruta %', valores, PALETTE.purple)] },
+
+        type: 'bar',
+
+        data: {
+
+            labels,
+
+            datasets: [{
+                
+                label: 'Receita Líquida',
+                data: valores,
+                backgroundColor: '#3498db',
+                borderColor: '#000000',
+                 borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+
         options: {
+
             ...CHART_DEFAULTS,
+
             scales: {
+
                 ...CHART_DEFAULTS.scales,
+
                 y: {
+
                     ...CHART_DEFAULTS.scales.y,
-                    ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => v.toFixed(1) + '%' }
+
+                    ticks: {
+
+                        ...CHART_DEFAULTS.scales.y.ticks,
+
+                        callback: brlTick
+                    }
                 }
             },
+
             plugins: {
+
                 ...CHART_DEFAULTS.plugins,
-                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
-                    label: ctx => ctx.parsed.y.toFixed(2) + '%'
-                }}
+
+                tooltip: {
+
+                    ...CHART_DEFAULTS.plugins.tooltip,
+
+                    callbacks: {
+
+                        label: ctx =>
+                            'R$ ' +
+                            ctx.parsed.y.toLocaleString(
+                                'pt-BR',
+                                {
+                                    minimumFractionDigits: 2
+                                }
+                            )
+                    }
+                }
             }
         }
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* =========================================================
    GRÁFICO 4 — Produtos Mais Vendidos

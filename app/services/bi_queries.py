@@ -448,6 +448,188 @@ def get_grafico_produtos_vendidos(filial=None,produto = None,categoria = None, d
 
 
 
+
+
+
+
+def get_grafico_receitaLiquida_filial(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query do grafico margem media percentual a dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT nome_filial, SUM(receita_liquida) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+    sql += " group by nome_filial Order By SUM(receita_liquida) "
+    
+
+    return text(sql), params
+
+
+
+
+
+
+
+
+def get_grafico_receitaLiquida_categoria(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
+    """
+    Monta a query do grafico margem media percentual a dinamicamente com base nos filtros.
+    Se os filtros forem None, retorna o total geral.
+    """
+    sql = "SELECT nome_categoria, SUM(receita_liquida) as total FROM comercial.vm_kpis_comercial_mensal WHERE 1=1 "
+    params = {}
+
+    if filial:
+        sql += " AND nome_filial = :filial"
+        params['filial'] = filial
+
+    if produto:
+        sql += " AND nome_produto = :produto"
+        params['produto'] = produto
+
+    if categoria:
+        sql += " AND nome_categoria = :categoria"
+        params['categoria'] = categoria
+    
+    if data_inicio and data_fim:
+        sql += " AND periodo BETWEEN :inicio AND :fim"
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+    sql += " group by nome_categoria ORDER BY total DESC "
+    
+
+    return text(sql), params
+
+
+
+from sqlalchemy import text
+
+
+
+
+
+
+def get_matriz_margem_mes_filial_categoria(filial=None,produto=None,categoria=None,data_inicio=None,data_fim=None):
+
+    sql = """
+
+        SELECT
+
+            nome_filial,
+            nome_categoria,
+            periodo,
+
+            SUM(margem_bruta) AS total
+
+        FROM comercial.vm_kpis_comercial_mensal
+
+        WHERE 1=1
+
+    """
+
+    params = {}
+
+    # FILIAL
+    if filial:
+
+        sql += """
+            AND nome_filial = :filial
+        """
+
+        params['filial'] = filial
+
+    # PRODUTO
+    if produto:
+
+        sql += """
+            AND nome_produto = :produto
+        """
+
+        params['produto'] = produto
+
+    # CATEGORIA
+    if categoria:
+
+        sql += """
+            AND nome_categoria = :categoria
+        """
+
+        params['categoria'] = categoria
+
+    # PERÍODO
+    if data_inicio and data_fim:
+
+        sql += """
+            AND periodo BETWEEN :inicio AND :fim
+        """
+
+        params['inicio'] = data_inicio
+        params['fim'] = data_fim
+
+    # GROUP BY
+    sql += """
+
+        GROUP BY
+
+            nome_filial,
+            nome_categoria,
+            periodo
+
+        ORDER BY
+
+            nome_filial,
+            nome_categoria,
+            periodo
+
+    """
+
+    return text(sql), params
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # Rota das Perguntas 
 
 def pergunta_faturamento(filial=None,produto = None,categoria = None, data_inicio=None, data_fim=None):
