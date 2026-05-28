@@ -1,630 +1,374 @@
-const selectFilial = document.getElementById('filialSelect');
-const selectProduto = document.getElementById('produtosSelect');
+/* =========================================================
+   SELETORES
+   ========================================================= */
+const selectFilial    = document.getElementById('filialSelect');
+const selectProduto   = document.getElementById('produtosSelect');
 const selectCategoria = document.getElementById('categoriaSelect');
-
-
-let bancoEstavaOffline = false;
-//KPIS
-
-const display_Receita_Bruta = document.getElementById('valorFaturamento');
-const display_Receita_Liquida = document.getElementById('valorReceita_liquida');
-const display_Desconto_total = document.getElementById('valorDescontoTotal')
-const display_valorCustoTotal = document.getElementById('valorCustoTotal')
-const display_valor_margemBruta = document.getElementById('valorMargemBruta')
-const display_Margem_percentual = document.getElementById('valorMargem_percentual')
-const display_quantidade_Vendida = document.getElementById('valorQuantidadeVendida')
-const display_ticket_medio = document.getElementById('valorTicketMedio')
-
-//Graficos
-const display_grafico1 = document.getElementById('Grafico1')
-const display_grafico2 = document.getElementById('Grafico2')
-const display_grafico3 = document.getElementById('Grafico3')
-const display_grafico4 = document.getElementById('Grafico4')
-
-//Grafico iniciar
-let grafico1 = null;
-let grafico2 = null;
-let grafico3 = null;
-let grafico4 = null;
-
-
-//botão aplicar
-const btn = document.getElementById('btnAplicar');
-
-//filtro Data
 const dataInicioInput = document.getElementById('dataInicio');
-const dataFimInput = document.getElementById('dataFim');
+const dataFimInput    = document.getElementById('dataFim');
+const btn             = document.getElementById('btnAplicar');
+const btnLimpar       = document.getElementById('btnLimpar');
+const erroBanco       = document.getElementById('alerta-banco-fora');
+const pagePeriod      = document.getElementById('page-period');
 
-// ALERTA BANCO
+// KPIs
+const display_Receita_Bruta       = document.getElementById('valorFaturamento');
+const display_Receita_Liquida     = document.getElementById('valorReceita_liquida');
+const display_Desconto_total      = document.getElementById('valorDescontoTotal');
+const display_valorCustoTotal     = document.getElementById('valorCustoTotal');
+const display_valor_margemBruta   = document.getElementById('valorMargemBruta');
+const display_Margem_percentual   = document.getElementById('valorMargem_percentual');
+const display_quantidade_Vendida  = document.getElementById('valorQuantidadeVendida');
+const display_ticket_medio        = document.getElementById('valorTicketMedio');
 
-const erroBanco =
-    document.getElementById("alerta-banco-fora");
+// Gráficos
+const display_grafico1 = document.getElementById('Grafico1');
+const display_grafico2 = document.getElementById('Grafico2');
+const display_grafico3 = document.getElementById('Grafico3');
+const display_grafico4 = document.getElementById('Grafico4');
 
+let grafico1 = null, grafico2 = null, grafico3 = null, grafico4 = null;
+let bancoEstavaOffline = false;
+
+/* =========================================================
+   PALETA DE CORES DOS GRÁFICOS
+   ========================================================= */
+const PALETTE = {
+    blue:   { line: '#2563EB', fill: 'rgba(37,99,235,.08)', point: '#1d4ed8' },
+    teal:   { line: '#0D9488', fill: 'rgba(13,148,136,.08)', point: '#0f766e' },
+    purple: { line: '#7C3AED', fill: 'rgba(124,58,237,.08)', point: '#6d28d9' },
+    amber:  { line: '#D97706', fill: 'rgba(217,119,6,.08)',  point: '#b45309' },
+};
+
+const CHART_DEFAULTS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: '#0F172A',
+            titleColor: '#94A3B8',
+            bodyColor: '#F1F5F9',
+            padding: 10,
+            borderColor: '#1E293B',
+            borderWidth: 1,
+            cornerRadius: 8,
+        }
+    },
+    scales: {
+        x: {
+            grid: { color: '#F1F5F9', drawBorder: false },
+            ticks: { color: '#94A3B8', font: { family: 'DM Sans', size: 11 }, maxRotation: 30, autoSkip: true },
+        },
+        y: {
+            grid: { color: '#F1F5F9', drawBorder: false },
+            ticks: { color: '#94A3B8', font: { family: 'DM Sans', size: 11 } },
+            beginAtZero: true,
+        }
+    },
+};
+
+function brlTick(v) {
+    if (Math.abs(v) >= 1_000_000) return 'R$' + (v / 1_000_000).toFixed(1) + 'M';
+    if (Math.abs(v) >= 1_000)     return 'R$' + (v / 1_000).toFixed(0) + 'K';
+    return 'R$' + v.toFixed(0);
+}
+
+function buildLineDataset(label, data, palette) {
+    return {
+        label,
+        data,
+        borderColor: palette.line,
+        backgroundColor: palette.fill,
+        pointBackgroundColor: palette.line,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+    };
+}
+
+/* =========================================================
+   BANCO — ESTADO
+   ========================================================= */
 function mostrarErroBanco() {
-
-    erroBanco.style.display = "block";
+    erroBanco.style.display = 'flex';
     bancoEstavaOffline = true;
 }
 
 function esconderErroBanco() {
-
-    erroBanco.style.display = "none";
-
+    erroBanco.style.display = 'none';
     bancoEstavaOffline = false;
 }
 
+/* =========================================================
+   ATUALIZAR PERÍODO NA HEADER
+   ========================================================= */
+function atualizarPeriodo() {
+    const ini = dataInicioInput.value;
+    const fim = dataFimInput.value;
+    if (ini && fim) {
+        const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+        pagePeriod.textContent = fmt(ini) + ' → ' + fmt(fim);
+    } else {
+        pagePeriod.textContent = 'Todos os períodos';
+    }
+}
 
-
-/* =========================
+/* =========================================================
    BUSCAR DADOS
-========================= */
+   ========================================================= */
 async function buscarDados() {
-
     try {
+        const params = buildParams();
 
-        const filial = selectFilial.value;
-        const produto = selectProduto.value;
-        const categoria = selectCategoria.value;
-        const dataInicio = dataInicioInput.value;
-        const dataFim = dataFimInput.value;
+        const [
+            res_bruto, res_liquida, res_descontoTotal, res_custoTotal,
+            res_margemBruta, res_margemPercentual, res_quantidadeVendida, res_ticketMedio
+        ] = await Promise.all([
+            fetch(`/faturamento?${params}`),
+            fetch(`/receita_liquida?${params}`),
+            fetch(`/desconto_total?${params}`),
+            fetch(`/custo_total?${params}`),
+            fetch(`/margem_bruta?${params}`),
+            fetch(`/margem_bruta_percentual?${params}`),
+            fetch(`/quantidade_vendida?${params}`),
+            fetch(`/ticket_medio?${params}`)
+        ]);
 
-        const params = new URLSearchParams();
-        
-        
-        params.append("filial", filial);
-        params.append("produto",produto);
-        params.append("categoria",categoria)
-        params.append("inicio", dataInicio);
-        params.append("fim", dataFim);
-
-
-
-     
-        //Faturamento
-        const [res_bruto, res_liquida,res_descontoTotal,res_custoTotal,
-            res_margemBruta,res_margemPercentual,res_quantidadeVendida,res_ticketMedio] = await Promise.all([
-    fetch(`/faturamento?${params.toString()}`),
-    fetch(`/receita_liquida?${params.toString()}`),
-    fetch(`/desconto_total?${params.toString()}`),
-    fetch(`/custo_total?${params.toString()}`),
-    fetch(`/margem_bruta?${params.toString()}`),
-    fetch(`/margem_bruta_percentual?${params.toString()}`),
-    fetch(`/quantidade_vendida?${params.toString()}`),
-    fetch(`/ticket_medio?${params.toString()}`)
-    
-    
-]);
-        // SE O BANCO CAIR
-        if (!res_bruto.ok || !res_liquida.ok) {
-
-    mostrarErroBanco();
-
-    return;
-}
-       
-        // BANCO OK
+        if (!res_bruto.ok || !res_liquida.ok) { mostrarErroBanco(); return; }
         esconderErroBanco();
 
-        const valor_receita_bruta = await res_bruto.json();
-        const valor_receita_liquida = await res_liquida.json();
-        const valor_desconto_total = await res_descontoTotal.json();
-        const valor_custo_total = await res_custoTotal.json();
-        const valor_margem_bruta = await res_margemBruta.json();
-        const valor_margem_percentual = await res_margemPercentual.json();
-        const valor_quantidade_vendida = await res_quantidadeVendida.json();
-        const valor_ticket_medio = await res_ticketMedio.json();
-        
+        display_Receita_Bruta.innerText      = await res_bruto.json();
+        display_Receita_Liquida.innerText    = await res_liquida.json();
+        display_Desconto_total.innerText     = await res_descontoTotal.json();
+        display_valorCustoTotal.innerText    = await res_custoTotal.json();
+        display_valor_margemBruta.innerText  = await res_margemBruta.json();
+        display_Margem_percentual.innerText  = await res_margemPercentual.json();
+        display_quantidade_Vendida.innerText = await res_quantidadeVendida.json();
+        display_ticket_medio.innerText       = await res_ticketMedio.json();
 
+        atualizarPeriodo();
 
-
-
-
-
-
-        
-
-
-
-        display_Receita_Bruta.innerText = valor_receita_bruta;
-        display_Receita_Liquida.innerText = valor_receita_liquida;
-        display_Desconto_total.innerText = valor_desconto_total;
-        display_valorCustoTotal.innerText = valor_custo_total;
-        display_valor_margemBruta.innerText = valor_margem_bruta;
-        display_Margem_percentual.innerText = valor_margem_percentual;
-        display_quantidade_Vendida.innerText = valor_quantidade_vendida;
-        display_ticket_medio.innerText = valor_ticket_medio;
-
-
-        await carregarGrafico1();
-        await carregarGrafico2();
-        await carregarGrafico3();
-        await carregarGrafico4();
-
+        await Promise.all([
+            carregarGrafico1(),
+            carregarGrafico2(),
+            carregarGrafico3(),
+            carregarGrafico4(),
+        ]);
 
     } catch (e) {
-
-        console.error("Erro ao buscar dados:", e);
-        mostrarErroBanco();
-
-    }
-}
-
-/* =========================
-   CARREGAR FILIAIS
-========================= */
-async function carregarFiliais() {
-
-    try {
-
-        const res = await fetch('/filiais');
-
-        const nomes = await res.json();
-
-        selectFilial.innerHTML = '<option value="">Todas as Filiais</option>';
-
-        nomes.forEach(nome => {
-
-            const opt = document.createElement('option');
-
-            opt.value = nome;
-            opt.text = nome;
-
-            selectFilial.appendChild(opt);
-
-        });
-
-    } catch (e) {
-
-        console.error("Erro ao carregar filiais:", e);
-
-    }
-}
-async function carregarProdutos(categoria = "") {
-
-    try {
-
-        const res = await fetch(`/produtos?categoria=${categoria}`);
-        if (!res.ok) {
-
-            mostrarErroBanco();
-
-            return;
-        }
-        esconderErroBanco();
-
-        const nomes = await res.json();
-
-        selectProduto.innerHTML =
-            '<option value="">Todos os Produtos</option>';
-
-        nomes.forEach(nome => {
-
-            const opt = document.createElement('option');
-
-            opt.value = nome;
-            opt.text = nome;
-
-            selectProduto.appendChild(opt);
-
-        });
-
-    } catch (e) {
-
-        console.error("Erro ao carregar produtos:", e);
-        mostrarErroBanco();
-
-    }
-}
-
-async function carregarCategorias(produto = "") {
-
-    try {
-
-        const res =
-            await fetch(`/categorias?produto=${produto}`);
-
-        if (!res.ok) {
-
-            mostrarErroBanco();
-
-            return;
-        }
-
-        esconderErroBanco();
-
-        const nomes = await res.json();
-
-        selectCategoria.innerHTML =
-            '<option value="">Todas as Categorias</option>';
-
-        nomes.forEach(nome => {
-
-            const opt = document.createElement('option');
-
-            opt.value = nome;
-            opt.text = nome;
-
-            selectCategoria.appendChild(opt);
-
-        });
-
-    } catch (e) {
-
-        console.error("Erro ao carregar categorias:", e);
-
+        console.error('Erro ao buscar dados:', e);
         mostrarErroBanco();
     }
 }
 
-//Graficos
-//Grafico 1
+/* =========================================================
+   HELPERS
+   ========================================================= */
+function buildParams() {
+    const p = new URLSearchParams();
+    p.append('filial',    selectFilial.value);
+    p.append('produto',   selectProduto.value);
+    p.append('categoria', selectCategoria.value);
+    p.append('inicio',    dataInicioInput.value);
+    p.append('fim',       dataFimInput.value);
+    return p.toString();
+}
+
+async function fetchGraficoDados(endpoint) {
+    const res = await fetch(`/${endpoint}?${buildParams()}`);
+    return res.json();
+}
+
+function destroyChart(ref) { if (ref) ref.destroy(); }
+
+/* =========================================================
+   GRÁFICO 1 — Receita Bruta
+   ========================================================= */
 async function carregarGrafico1() {
-
-    const filial = selectFilial.value;
-    const produto = selectProduto.value;
-    const categoria = selectCategoria.value;
-    const dataInicio = dataInicioInput.value;
-    const dataFim = dataFimInput.value;
-
-    const params = new URLSearchParams();
-
-    params.append("filial", filial);
-    params.append("produto", produto);
-    params.append("categoria", categoria);
-    params.append("inicio", dataInicio);
-    params.append("fim", dataFim);
-
-    const resposta =
-        await fetch(`/grafico_receita_bruta?${params.toString()}`);
-
-    const dados = await resposta.json();
-
-    console.log(dados);
-
-    const labels = dados.map(item => item.periodo);
-
-    const valores = dados.map(item => item.total);
-    if (grafico1) {
-    grafico1.destroy();
-}
+    const dados = await fetchGraficoDados('grafico_receita_bruta');
+    const labels  = dados.map(d => d.periodo);
+    const valores = dados.map(d => d.total);
+    destroyChart(grafico1);
 
     grafico1 = new Chart(display_grafico1, {
-
         type: 'line',
-
-        data: {
-
-            labels: labels,
-
-            datasets: [{
-                label: 'Receita Bruta',
-
-                data: valores,
-
-                borderWidth: 1
-            }]
-        },
-
+        data: { labels, datasets: [buildLineDataset('Receita Bruta', valores, PALETTE.blue)] },
         options: {
-
-            responsive: true,
-
+            ...CHART_DEFAULTS,
             scales: {
-
-                y: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-
-                        callback: function(valor) {
-
-                            return valor.toLocaleString('pt-BR', {
-                                style: 'currency',
-                                currency: 'BRL'
-                            });
-                        }
-                    }
-                }
+                ...CHART_DEFAULTS.scales,
+                y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: brlTick } }
+            },
+            plugins: {
+                ...CHART_DEFAULTS.plugins,
+                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+                    label: ctx => 'R$ ' + ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                }}
             }
         }
     });
 }
 
-
-
-
-
-//Grafico 2 
+/* =========================================================
+   GRÁFICO 2 — Receita Líquida
+   ========================================================= */
 async function carregarGrafico2() {
-
-    const filial = selectFilial.value;
-    const produto = selectProduto.value;
-    const categoria = selectCategoria.value;
-    const dataInicio = dataInicioInput.value;
-    const dataFim = dataFimInput.value;
-
-    const params = new URLSearchParams();
-
-    params.append("filial", filial);
-    params.append("produto", produto);
-    params.append("categoria", categoria);
-    params.append("inicio", dataInicio);
-    params.append("fim", dataFim);
-
-    const resposta =
-        await fetch(`/grafico_receita_liquida?${params.toString()}`);
-
-    const dados = await resposta.json();
-
-    console.log(dados);
-
-    const labels = dados.map(item => item.periodo);
-
-    const valores = dados.map(item => item.total);
-    if (grafico2) {
-    grafico2.destroy();
-}
+    const dados = await fetchGraficoDados('grafico_receita_liquida');
+    const labels  = dados.map(d => d.periodo);
+    const valores = dados.map(d => d.total);
+    destroyChart(grafico2);
 
     grafico2 = new Chart(display_grafico2, {
-
         type: 'line',
-
-        data: {
-
-            labels: labels,
-
-            datasets: [{
-                label: 'Receita liquida',
-
-                data: valores,
-
-                borderWidth: 1
-            }]
-        },
-
+        data: { labels, datasets: [buildLineDataset('Receita Líquida', valores, PALETTE.teal)] },
         options: {
-
-            responsive: true,
-
+            ...CHART_DEFAULTS,
             scales: {
-
-                y: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-
-                        callback: function(valor) {
-
-                            return valor.toLocaleString('pt-BR', {
-                                style: 'currency',
-                                currency: 'BRL'
-                            });
-                        }
-                    }
-                }
+                ...CHART_DEFAULTS.scales,
+                y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: brlTick } }
+            },
+            plugins: {
+                ...CHART_DEFAULTS.plugins,
+                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+                    label: ctx => 'R$ ' + ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                }}
             }
         }
     });
 }
 
-
-
-
-
-
-//grafico 3 
+/* =========================================================
+   GRÁFICO 3 — Margem Bruta %
+   ========================================================= */
 async function carregarGrafico3() {
-
-    const filial = selectFilial.value;
-    const produto = selectProduto.value;
-    const categoria = selectCategoria.value;
-    const dataInicio = dataInicioInput.value;
-    const dataFim = dataFimInput.value;
-
-    const params = new URLSearchParams();
-
-    params.append("filial", filial);
-    params.append("produto", produto);
-    params.append("categoria", categoria);
-    params.append("inicio", dataInicio);
-    params.append("fim", dataFim);
-
-    const resposta =
-        await fetch(`/grafico_margem_bruta_percentual?${params.toString()}`);
-
-    const dados = await resposta.json();
-
-    console.log(dados);
-
-    const labels = dados.map(item => item.periodo);
-
-    const valores = dados.map(item => item.total);
-    if (grafico3) {
-    grafico3.destroy();
-}
+    const dados = await fetchGraficoDados('grafico_margem_bruta_percentual');
+    const labels  = dados.map(d => d.periodo);
+    const valores = dados.map(d => d.total);
+    destroyChart(grafico3);
 
     grafico3 = new Chart(display_grafico3, {
-
         type: 'line',
-
-        data: {
-
-            labels: labels,
-
-            datasets: [{
-                label: 'Margem Bruta Percentual',
-
-                data: valores,
-
-                borderWidth: 1
-            }]
-        },
-
+        data: { labels, datasets: [buildLineDataset('Margem Bruta %', valores, PALETTE.purple)] },
         options: {
-
-            responsive: true,
-
+            ...CHART_DEFAULTS,
             scales: {
-
+                ...CHART_DEFAULTS.scales,
                 y: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-
-                        callback: function(valor) {
-
-                           return valor.toFixed(1) + '%';
-                        }
-                    }
+                    ...CHART_DEFAULTS.scales.y,
+                    ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => v.toFixed(1) + '%' }
                 }
+            },
+            plugins: {
+                ...CHART_DEFAULTS.plugins,
+                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+                    label: ctx => ctx.parsed.y.toFixed(2) + '%'
+                }}
             }
         }
     });
 }
 
-
-
+/* =========================================================
+   GRÁFICO 4 — Produtos Mais Vendidos
+   ========================================================= */
 async function carregarGrafico4() {
-
-    const filial = selectFilial.value;
-    const produto = selectProduto.value;
-    const categoria = selectCategoria.value;
-    const dataInicio = dataInicioInput.value;
-    const dataFim = dataFimInput.value;
-
-    const params = new URLSearchParams();
-
-    params.append("filial", filial);
-    params.append("produto", produto);
-    params.append("categoria", categoria);
-    params.append("inicio", dataInicio);
-    params.append("fim", dataFim);
-
-    const resposta =
-        await fetch(`/grafico_produtos_vendidos?${params.toString()}`);
-
-    const dados = await resposta.json();
-
-    console.log(dados);
-
-    const labels = dados.map(item => item.nome_produto);
-
-    const valores = dados.map(item => item.total);
-    if (grafico4) {
-    grafico4.destroy();
-}
+    const dados = await fetchGraficoDados('grafico_produtos_vendidos');
+    const labels  = dados.map(d => d.nome_produto);
+    const valores = dados.map(d => d.total);
+    destroyChart(grafico4);
 
     grafico4 = new Chart(display_grafico4, {
-
         type: 'bar',
-
         data: {
-
-            labels: labels,
-
+            labels,
             datasets: [{
-                label: 'Quantidade Vendida',
-
+                label: 'Qtd. Vendida',
                 data: valores,
-
-                borderWidth: 1
+                backgroundColor: 'rgba(217,119,6,.15)',
+                borderColor: '#D97706',
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
             }]
         },
-
         options: {
-
-            responsive: true,
-
+            ...CHART_DEFAULTS,
+            indexAxis: 'y',
+            interaction: { mode: 'nearest', axis: 'y', intersect: false },
+            plugins: {
+                ...CHART_DEFAULTS.plugins,
+                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+                    label: ctx => ctx.parsed.x.toLocaleString('pt-BR') + ' un.'
+                }}
+            },
             scales: {
-
-                y: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-
-                        callback: function(valor) {
-
-                           return valor;
-                        }
-                    }
-                }
+                x: { ...CHART_DEFAULTS.scales.x, ticks: { ...CHART_DEFAULTS.scales.x.ticks, callback: v => v.toLocaleString('pt-BR') } },
+                y: { ...CHART_DEFAULTS.scales.y, grid: { display: false } }
             }
         }
     });
 }
 
+/* =========================================================
+   CARREGAR SELETORES
+   ========================================================= */
+async function carregarFiliais() {
+    try {
+        const nomes = await (await fetch('/filiais')).json();
+        selectFilial.innerHTML = '<option value="">Todas as Filiais</option>';
+        nomes.forEach(n => { const o = document.createElement('option'); o.value = o.text = n; selectFilial.appendChild(o); });
+    } catch (e) { console.error('Erro filiais:', e); }
+}
 
+async function carregarProdutos(categoria = '') {
+    try {
+        const res = await fetch(`/produtos?categoria=${categoria}`);
+        if (!res.ok) { mostrarErroBanco(); return; }
+        esconderErroBanco();
+        const nomes = await res.json();
+        selectProduto.innerHTML = '<option value="">Todos os Produtos</option>';
+        nomes.forEach(n => { const o = document.createElement('option'); o.value = o.text = n; selectProduto.appendChild(o); });
+    } catch (e) { console.error('Erro produtos:', e); mostrarErroBanco(); }
+}
 
+async function carregarCategorias(produto = '') {
+    try {
+        const res = await fetch(`/categorias?produto=${produto}`);
+        if (!res.ok) { mostrarErroBanco(); return; }
+        esconderErroBanco();
+        const nomes = await res.json();
+        selectCategoria.innerHTML = '<option value="">Todas as Categorias</option>';
+        nomes.forEach(n => { const o = document.createElement('option'); o.value = o.text = n; selectCategoria.appendChild(o); });
+    } catch (e) { console.error('Erro categorias:', e); mostrarErroBanco(); }
+}
 
-    
-
-/* =========================
-   EVENTO BOTÃO
-========================= */
+/* =========================================================
+   EVENTOS
+   ========================================================= */
 btn.addEventListener('click', buscarDados);
 
-selectCategoria.addEventListener("change", async () => {
+btnLimpar.addEventListener('click', () => window.location.reload());
 
-    const categoria = selectCategoria.value;
-
-    await carregarProdutos(categoria);
-
-    // se voltou para TODOS
-    if (categoria === "") {
-
-        selectProduto.value = "";
-    }
+selectCategoria.addEventListener('change', async () => {
+    await carregarProdutos(selectCategoria.value);
+    if (!selectCategoria.value) selectProduto.value = '';
 });
 
-
-selectProduto.addEventListener("change", async () => {
-
-    const produto = selectProduto.value;
-
-    await carregarCategorias(produto);
-
-    // se voltou para TODOS
-    if (produto === "") {
-
-        selectCategoria.value = "";
-    }
+selectProduto.addEventListener('change', async () => {
+    await carregarCategorias(selectProduto.value);
+    if (!selectProduto.value) selectCategoria.value = '';
 });
 
-
-
-
-const btnLimpar = document.getElementById('btnLimpar');
-
-btnLimpar.addEventListener('click', () => {
-
-    window.location.reload();
-
-});
-
-
-
-
-
-
-
-
-
-
-/* =========================
+/* =========================================================
    INICIALIZAÇÃO
-========================= */
+   ========================================================= */
 (async function init() {
-
-    await Promise.all([
-        carregarFiliais(),
-        carregarProdutos(),
-        carregarCategorias()
-    ]);
-
+    await Promise.all([carregarFiliais(), carregarProdutos(), carregarCategorias()]);
     await buscarDados();
-
 })();
