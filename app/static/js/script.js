@@ -159,6 +159,7 @@ async function buscarDados() {
             carregarGrafico2(),
             carregarGrafico3(),
             carregarGrafico4(),
+            carregarMatriz(),
         ]);
 
     } catch (e) {
@@ -216,161 +217,82 @@ async function carregarGrafico1() {
 }
 
 /* =========================================================
-   GRÁFICO 2 — Receita Líquida
+   GRÁFICO 2 — Receita Líquida por Filial
    ========================================================= */
 async function carregarGrafico2() {
-
-    const dados = await fetchGraficoDados(
-        'grafico_receitaliquida_por_filial'
-    );
-
-    const labels = dados.map(d => d.nome_filial);
-
+    const dados = await fetchGraficoDados('grafico_receitaliquida_por_filial');
+    const labels  = dados.map(d => d.nome_filial);
     const valores = dados.map(d => d.total);
-
     destroyChart(grafico2);
 
     grafico2 = new Chart(display_grafico2, {
-
         type: 'bar',
-
         data: {
-
             labels,
-
             datasets: [{
-                
-                label: 'Receita Líquida',
+                label: 'Receita Líquida por Filial',
                 data: valores,
-                backgroundColor: '#3498db',
-                borderColor: '#000000',
-                 borderWidth: 2,
-                borderRadius: 8
+                backgroundColor: 'rgba(13,148,136,.15)',
+                borderColor: PALETTE.teal.line,
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
             }]
         },
-
         options: {
-
             ...CHART_DEFAULTS,
-
+            interaction: { mode: 'nearest', axis: 'x', intersect: false },
             scales: {
-
                 ...CHART_DEFAULTS.scales,
-
-                y: {
-
-                    ...CHART_DEFAULTS.scales.y,
-
-                    ticks: {
-
-                        ...CHART_DEFAULTS.scales.y.ticks,
-
-                        callback: brlTick
-                    }
-                }
+                x: { ...CHART_DEFAULTS.scales.x, grid: { display: false } },
+                y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: brlTick } }
             },
-
             plugins: {
-
                 ...CHART_DEFAULTS.plugins,
-
-                tooltip: {
-
-                    ...CHART_DEFAULTS.plugins.tooltip,
-
-                    callbacks: {
-
-                        label: ctx =>
-                            'R$ ' +
-                            ctx.parsed.y.toLocaleString(
-                                'pt-BR',
-                                {
-                                    minimumFractionDigits: 2
-                                }
-                            )
-                    }
-                }
+                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+                    label: ctx => 'R$ ' + ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                }}
             }
         }
     });
 }
 
 /* =========================================================
-   GRÁFICO 3 — Margem Bruta %
+   GRÁFICO 3 — Receita Líquida por Categoria
    ========================================================= */
-
 async function carregarGrafico3() {
-
-    const dados = await fetchGraficoDados(
-        'grafico_receitaliquida_por_categoria'
-    );
-
-    const labels = dados.map(d => d.nome_categoria);
-
+    const dados = await fetchGraficoDados('grafico_receitaliquida_por_categoria');
+    const labels  = dados.map(d => d.nome_categoria);
     const valores = dados.map(d => d.total);
-
     destroyChart(grafico3);
 
     grafico3 = new Chart(display_grafico3, {
-
         type: 'bar',
-
         data: {
-
             labels,
-
             datasets: [{
-                
-                label: 'Receita Líquida',
+                label: 'Receita Líquida por Categoria',
                 data: valores,
-                backgroundColor: '#3498db',
-                borderColor: '#000000',
-                 borderWidth: 2,
-                borderRadius: 8
+                backgroundColor: 'rgba(124,58,237,.15)',
+                borderColor: PALETTE.purple.line,
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
             }]
         },
-
         options: {
-
             ...CHART_DEFAULTS,
-
+            indexAxis: 'y',
+            interaction: { mode: 'nearest', axis: 'y', intersect: false },
             scales: {
-
-                ...CHART_DEFAULTS.scales,
-
-                y: {
-
-                    ...CHART_DEFAULTS.scales.y,
-
-                    ticks: {
-
-                        ...CHART_DEFAULTS.scales.y.ticks,
-
-                        callback: brlTick
-                    }
-                }
+                x: { ...CHART_DEFAULTS.scales.x, ticks: { ...CHART_DEFAULTS.scales.x.ticks, callback: brlTick } },
+                y: { ...CHART_DEFAULTS.scales.y, grid: { display: false } }
             },
-
             plugins: {
-
                 ...CHART_DEFAULTS.plugins,
-
-                tooltip: {
-
-                    ...CHART_DEFAULTS.plugins.tooltip,
-
-                    callbacks: {
-
-                        label: ctx =>
-                            'R$ ' +
-                            ctx.parsed.y.toLocaleString(
-                                'pt-BR',
-                                {
-                                    minimumFractionDigits: 2
-                                }
-                            )
-                    }
-                }
+                tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+                    label: ctx => 'R$ ' + ctx.parsed.x.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                }}
             }
         }
     });
@@ -491,3 +413,211 @@ selectProduto.addEventListener('change', async () => {
     await Promise.all([carregarFiliais(), carregarProdutos(), carregarCategorias()]);
     await buscarDados();
 })();
+
+/* =========================================================
+   MATRIZ — MARGEM BRUTA POR FILIAL / CATEGORIA / MÊS
+   ========================================================= */
+const matrizLoading = document.getElementById('matrizLoading');
+const matrizVazia   = document.getElementById('matrizVazia');
+const matrizTabela  = document.getElementById('matrizTabela');
+const matrizHead    = document.getElementById('matrizHead');
+const matrizBody    = document.getElementById('matrizBody');
+const btnExpandAll  = document.getElementById('btnExpandAll');
+const btnCollapseAll = document.getElementById('btnCollapseAll');
+
+// Estado de quais filiais estão expandidas
+const filialExpandida = new Set();
+
+/* ── helpers ── */
+function margemClass(v) {
+    if (v === null || v === undefined || isNaN(v)) return '';
+    if (v >= 30) return 'margem-alta';
+    if (v >= 15) return 'margem-media';
+    return 'margem-baixa';
+}
+
+function fmtPct(v) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return Number(v).toFixed(1) + '%';
+}
+
+/* ── renderizar tabela ── */
+function renderizarMatriz(dados) {
+
+    matrizHead.innerHTML = '';
+    matrizBody.innerHTML = '';
+
+    if (!dados || dados.length === 0) {
+        matrizTabela.style.display = 'none';
+        matrizVazia.style.display  = 'flex';
+        return;
+    }
+
+    // Coletar todos os períodos únicos e ordenar
+    const periodosSet = new Set();
+    dados.forEach(filialObj => {
+        filialObj.categorias.forEach(cat => {
+            cat.periodos.forEach(p => periodosSet.add(p.periodo));
+        });
+    });
+
+    // Ordena MM/YYYY cronologicamente
+    const periodos = [...periodosSet].sort((a, b) => {
+        const [ma, ya] = a.split('/').map(Number);
+        const [mb, yb] = b.split('/').map(Number);
+        return ya !== yb ? ya - yb : ma - mb;
+    });
+
+    // ── Cabeçalho ──
+    const headTr = document.createElement('tr');
+    headTr.innerHTML = `<th>Filial / Categoria</th>`;
+    periodos.forEach(p => {
+        const [m, y] = p.split('/');
+        const label = new Date(y, m - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        headTr.innerHTML += `<th>${label}</th>`;
+    });
+    headTr.innerHTML += `<th class="col-total">Total</th>`;
+    matrizHead.appendChild(headTr);
+
+    // ── Calcular total geral por período ──
+    const totalGeral = {}; // periodo -> { soma, count }
+    let totalGeralGlobal = 0;
+    let totalGeralCount  = 0;
+
+    dados.forEach(filialObj => {
+        filialObj.categorias.forEach(cat => {
+            cat.periodos.forEach(p => {
+                if (!totalGeral[p.periodo]) totalGeral[p.periodo] = { soma: 0, count: 0 };
+                totalGeral[p.periodo].soma  += p.total;
+                totalGeral[p.periodo].count += 1;
+                totalGeralGlobal += p.total;
+            });
+        });
+    });
+
+    // ── Corpo ──
+    dados.forEach(filialObj => {
+        const filialKey = filialObj.filial;
+        const isOpen    = filialExpandida.has(filialKey);
+
+        // Mapa periodo->soma das categorias da filial
+        const filialPorPeriodo = {};
+        filialObj.categorias.forEach(cat => {
+            cat.periodos.forEach(p => {
+                filialPorPeriodo[p.periodo] = (filialPorPeriodo[p.periodo] || 0) + p.total;
+            });
+        });
+
+        // Total da filial = soma de todas as categorias em todos os períodos
+        const filialTotalGlobal = Object.values(filialPorPeriodo).reduce((acc, v) => acc + v, 0);
+
+        // Linha FILIAL
+        const trFilial = document.createElement('tr');
+        trFilial.className = 'row-filial';
+        trFilial.dataset.filial = filialKey;
+
+        let cellsFilial = `
+            <td>
+                <span class="expand-icon ${isOpen ? 'open' : ''}">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M3 2l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                ${filialKey}
+            </td>`;
+
+        periodos.forEach(p => {
+            const soma = filialPorPeriodo[p] !== undefined ? filialPorPeriodo[p] : null;
+            cellsFilial += `<td class="${margemClass(soma)}">${fmtPct(soma)}</td>`;
+        });
+
+        cellsFilial += `<td class="col-total ${margemClass(filialTotalGlobal)}">${fmtPct(filialTotalGlobal)}</td>`;
+        trFilial.innerHTML = cellsFilial;
+
+        // Toggle ao clicar
+        trFilial.addEventListener('click', () => {
+            if (filialExpandida.has(filialKey)) {
+                filialExpandida.delete(filialKey);
+            } else {
+                filialExpandida.add(filialKey);
+            }
+            renderizarMatriz(dados);
+        });
+
+        matrizBody.appendChild(trFilial);
+
+        // Linhas CATEGORIA (só se expandida)
+        if (isOpen) {
+            filialObj.categorias.forEach(cat => {
+                const trCat = document.createElement('tr');
+                trCat.className = 'row-categoria';
+
+                const catTotal = cat.periodos.reduce((acc, p) => acc + p.total, 0);
+                const catPorPeriodo = {};
+                cat.periodos.forEach(p => { catPorPeriodo[p.periodo] = p.total; });
+
+                let cellsCat = `<td>${cat.categoria}</td>`;
+                periodos.forEach(p => {
+                    const v = catPorPeriodo[p] !== undefined ? catPorPeriodo[p] : null;
+                    cellsCat += `<td class="${margemClass(v)}">${fmtPct(v)}</td>`;
+                });
+                cellsCat += `<td class="col-total ${margemClass(catTotal)}">${fmtPct(catTotal)}</td>`;
+
+                trCat.innerHTML = cellsCat;
+                matrizBody.appendChild(trCat);
+            });
+        }
+    });
+
+    // Linha TOTAL GERAL
+    const trTotal = document.createElement('tr');
+    trTotal.className = 'row-total';
+
+    let cellsTotal = `<td>Total Geral</td>`;
+    periodos.forEach(p => {
+        const g = totalGeral[p];
+        const soma = g ? g.soma : null;
+        cellsTotal += `<td>${fmtPct(soma)}</td>`;
+    });
+    const somaGeralGlobal = totalGeralGlobal > 0 ? totalGeralGlobal : null;
+    cellsTotal += `<td class="col-total">${fmtPct(somaGeralGlobal)}</td>`;
+
+    trTotal.innerHTML = cellsTotal;
+    matrizBody.appendChild(trTotal);
+
+    matrizVazia.style.display  = 'none';
+    matrizTabela.style.display = 'table';
+}
+
+/* ── carregar dados ── */
+let dadosMatrizCache = null;
+
+async function carregarMatriz() {
+    matrizLoading.style.display = 'flex';
+    matrizTabela.style.display  = 'none';
+    matrizVazia.style.display   = 'none';
+
+    try {
+        const res = await fetch(`/matriz_margem_bruta?${buildParams()}`);
+        if (!res.ok) { mostrarErroBanco(); return; }
+        dadosMatrizCache = await res.json();
+        renderizarMatriz(dadosMatrizCache);
+    } catch (e) {
+        console.error('Erro ao carregar matriz:', e);
+        mostrarErroBanco();
+    } finally {
+        matrizLoading.style.display = 'none';
+    }
+}
+
+/* ── botões expandir/recolher ── */
+btnExpandAll.addEventListener('click', () => {
+    if (!dadosMatrizCache) return;
+    dadosMatrizCache.forEach(f => filialExpandida.add(f.filial));
+    renderizarMatriz(dadosMatrizCache);
+});
+
+btnCollapseAll.addEventListener('click', () => {
+    filialExpandida.clear();
+    if (dadosMatrizCache) renderizarMatriz(dadosMatrizCache);
+});

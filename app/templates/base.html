@@ -221,6 +221,39 @@
 
             </div>
 
+            <!-- MATRIZ MARGEM BRUTA -->
+            <div class="matrix-card">
+                <div class="matrix-header">
+                    <div class="matrix-header-left">
+                        <div class="chart-title">Margem Bruta por Filial e Categoria</div>
+                        <div class="matrix-subtitle">Expansível por filial · valores em %</div>
+                    </div>
+                    <div class="matrix-actions">
+                        <button class="matrix-btn-expand" id="btnExpandAll">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Expandir tudo
+                        </button>
+                        <button class="matrix-btn-expand" id="btnCollapseAll">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9l5-5 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Recolher tudo
+                        </button>
+                    </div>
+                </div>
+                <div class="matrix-wrap">
+                    <div id="matrizLoading" class="matrix-loading">
+                        <div class="matrix-spinner"></div>
+                        <span>Carregando dados...</span>
+                    </div>
+                    <div id="matrizVazia" class="matrix-empty" style="display:none;">
+                        Nenhum dado encontrado para os filtros selecionados.
+                    </div>
+                    <table class="matrix-table" id="matrizTabela" style="display:none;">
+                        <thead id="matrizHead"></thead>
+                        <tbody id="matrizBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </main>
     </div>
 
