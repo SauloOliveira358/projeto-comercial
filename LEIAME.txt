@@ -1,0 +1,149 @@
+LEIAME - Projeto Comercial Aurora
+==================================
+
+1. Nome do projeto
+------------------
+
+Projeto Comercial - Rede Comercial Aurora
+
+
+2. Resumo do projeto
+--------------------
+
+Este projeto é uma aplicação web local para análise de vendas.
+
+Ele mostra um painel com indicadores comerciais, filtros e gráficos.
+
+O sistema usa:
+
+- Python;
+- Flask;
+- PostgreSQL;
+- Docker;
+- HTML, CSS e JavaScript;
+- Chart.js.
+
+O objetivo é permitir a análise de dados comerciais como faturamento, receita líquida, descontos, custos, margens e produtos mais vendidos.
+
+
+3. Como instalar
+----------------
+
+Antes de executar, instale no computador:
+
+- Docker Desktop;
+- Python 3;
+- pgAdmin ou DBeaver;
+- navegador web.
+
+Depois, abra o terminal na pasta do projeto:
+
+C:\Users\thiag\OneDrive\Documentos\GitHub\projeto-comercial
+
+Instale as dependências:
+
+pip install -r requirements.txt
+
+Se o comando acima não funcionar, tente:
+
+py -m pip install -r requirements.txt
+
+
+4. Como configurar o banco de dados
+-----------------------------------
+
+Suba o PostgreSQL com Docker:
+
+docker run -d --name db_comercial -p 5781:5432 -e POSTGRES_DB=bi_comercial -e POSTGRES_USER=bi_user -e POSTGRES_PASSWORD=bi_pass postgres:16.1
+
+Se o container já existir, use:
+
+docker start db_comercial
+
+Dados de conexão:
+
+Host: localhost
+Porta: 5781
+Banco: bi_comercial
+Usuário: bi_user
+Senha: bi_pass
+
+Abra o pgAdmin ou DBeaver e execute o script:
+
+db/init/cria_banco.sql
+
+Esse script cria as tabelas, insere dados de exemplo e cria a view usada pelo dashboard.
+
+Confira também o arquivo .env:
+
+DB_HOST=localhost
+DB_PORT=5781
+DB_NAME=bi_comercial
+DB_USER=bi_user
+DB_PASSWORD=bi_pass
+
+
+5. Como executar
+----------------
+
+Com o banco ligado e a base criada, execute:
+
+python run.py
+
+Se não funcionar, tente:
+
+py run.py
+
+Depois abra no navegador:
+
+http://127.0.0.1:5000
+
+Não feche o terminal enquanto estiver usando o sistema.
+
+
+6. Principais funcionalidades
+-----------------------------
+
+O sistema permite:
+
+- visualizar indicadores comerciais;
+- filtrar por período;
+- filtrar por filial;
+- filtrar por categoria;
+- filtrar por produto;
+- consultar faturamento bruto;
+- consultar desconto total;
+- consultar receita líquida;
+- consultar custo total;
+- consultar margem bruta;
+- consultar margem bruta percentual;
+- consultar quantidade vendida;
+- consultar ticket médio;
+- visualizar gráficos;
+- visualizar produtos mais vendidos;
+- visualizar matriz de margem bruta.
+
+
+7. Observações importantes para outro desenvolvedor
+---------------------------------------------------
+
+- A aplicação principal está na pasta app.
+- As rotas estão em app/routes.py.
+- As consultas SQL estão em app/services/bi_queries.py.
+- A conexão com banco está em app/db.py.
+- As configurações do banco vêm do arquivo .env.
+- A tela principal está em app/templates/base.html.
+- O JavaScript do dashboard está em app/static/js/script.js.
+- O script do banco está em db/init/cria_banco.sql.
+- O docker-compose.yml ainda está vazio; atualmente o banco é iniciado com docker run.
+- O banco não possui procedures, functions ou triggers próprias.
+- A view materializada se chama comercial.vm_kpis_comercial_mensal.
+- Se os dados forem alterados manualmente, pode ser necessário executar:
+
+REFRESH MATERIALIZED VIEW comercial.vm_kpis_comercial_mensal;
+
+- Para parar a aplicação, pressione Ctrl + C no terminal.
+- Para parar o banco, use:
+
+docker stop db_comercial
+
