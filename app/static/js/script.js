@@ -237,6 +237,7 @@ async function carregarGrafico2() {
                 borderWidth: 1.5,
                 borderRadius: 6,
                 borderSkipped: false,
+                maxBarThickness: 50
             }]
         },
         options: {
@@ -278,6 +279,7 @@ async function carregarGrafico3() {
                 borderWidth: 1.5,
                 borderRadius: 6,
                 borderSkipped: false,
+                maxBarThickness: 50
             }]
         },
         options: {
@@ -336,6 +338,7 @@ async function carregarGrafico4() {
                 borderWidth: 1.5,
                 borderRadius: 6,
                 borderSkipped: false,
+                maxBarThickness: 50
             }]
         },
         options: {
@@ -438,7 +441,7 @@ function margemClass(v) {
 
 function fmtPct(v) {
     if (v === null || v === undefined || isNaN(v)) return '—';
-    return Number(v).toFixed(1) + '%';
+    return 'R$ ' + Number(v).toFixed(1) ;
 }
 
 /* ── renderizar tabela ── */
